@@ -7,6 +7,7 @@ package myhabittracker;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.prefs.Preferences;
 
 /**
  *
@@ -21,6 +22,29 @@ public class DashboardHabit extends javax.swing.JFrame {
      */
     public DashboardHabit() {
         initComponents();
+        setLocationRelativeTo(null);
+        Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
+
+        // Restore last position and size if available
+        int x = prefs.getInt("windowX", -1);
+        int y = prefs.getInt("windowY", -1);
+        int w = prefs.getInt("windowW", -1);
+        int h = prefs.getInt("windowH", -1);
+
+        if (x != -1 && y != -1 && w > 0 && h > 0) {
+            setBounds(x, y, w, h);
+        }
+
+        // Save position & size on close
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                prefs.putInt("windowX", getX());
+                prefs.putInt("windowY", getY());
+                prefs.putInt("windowW", getWidth());
+                prefs.putInt("windowH", getHeight());
+            }
+        });
 
         // Formatter for nice column header labels
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
@@ -94,6 +118,7 @@ public class DashboardHabit extends javax.swing.JFrame {
 
             }
         ));
+        jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -106,7 +131,7 @@ public class DashboardHabit extends javax.swing.JFrame {
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(addHabit)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 232, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 455, Short.MAX_VALUE)
                         .addComponent(LockButton)))
                 .addContainerGap())
         );
@@ -117,7 +142,7 @@ public class DashboardHabit extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(addHabit)
                     .addComponent(LockButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 111, Short.MAX_VALUE)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -132,12 +157,12 @@ public class DashboardHabit extends javax.swing.JFrame {
         // Create habit name (you can later replace this with user input dialog)
         String habitName = "New Habit";
 
-    // Create row data: first col = habit name, others = unchecked boxes (false)
-    Object[] rowData = new Object[7];
-    rowData[0] = habitName;
-    for (int i = 1; i < 7; i++) {
-        rowData[i] = false; // unchecked by default
-    }
+        // Create row data: first col = habit name, others = unchecked boxes (false)
+        Object[] rowData = new Object[7];
+        rowData[0] = habitName;
+        for (int i = 1; i < 7; i++) {
+            rowData[i] = false; // unchecked by default
+        }
 
         // Add row to table
         model.addRow(rowData);
@@ -145,6 +170,9 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
         // TODO add your handling code here:
+        // Open the PinPasswordHabit window
+        PinPasswordHabit pinWindow = new PinPasswordHabit();
+        pinWindow.setVisible(true);
 
     }//GEN-LAST:event_LockButtonActionPerformed
 
@@ -158,11 +186,11 @@ public class DashboardHabit extends javax.swing.JFrame {
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
         try {
-        // Set FlatLaf Look and Feel
-        javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
-    } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-        logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
-    }
+            // Set FlatLaf Look and Feel
+            javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
+        }
         //</editor-fold>
 
         /* Create and display the form */

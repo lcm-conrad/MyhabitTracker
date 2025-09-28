@@ -3,47 +3,69 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package myhabittracker;
+
+import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.event.KeyEvent;
+import java.util.prefs.Preferences;
 import javax.swing.JTextField;
 
-
-
-
-
 public class PinPasswordHabit extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PinPasswordHabit.class.getName());
 
     /**
      * Creates new form PinPassword
      */
     public PinPasswordHabit() {
-        
         initComponents();
+       
+        setSize(360, 190);           
+        setTitle("Enter PIN");        // optional
+        setLocationRelativeTo(null);
         
-    }
-    private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
-    char c = evt.getKeyChar();
+        Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
 
-    if (Character.isDigit(c)) {
-        if (currentField.getText().length() == 0) {
-            currentField.setText(String.valueOf(c));
-            evt.consume(); // prevent duplicate input
+        // Restore last position
+        int x = prefs.getInt("windowX", -1);
+        int y = prefs.getInt("windowY", -1);
+        int w = prefs.getInt("windowW", -1);
+        int h = prefs.getInt("windowH", -1);
 
-            if (nextField != null) {
-                nextField.requestFocus();
-            }
-        } else {
-            evt.consume(); // block input if already filled
+        if (x != -1 && y != -1 && w > 0 && h > 0) {
+            setBounds(x, y, w, h);
         }
-    } else if (!Character.isISOControl(c)) {
-        evt.consume(); // block non-digit input
+
+        // Save position & size on close
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                prefs.putInt("windowX", getX());
+                prefs.putInt("windowY", getY());
+                prefs.putInt("windowW", getWidth());
+                prefs.putInt("windowH", getHeight());
+            }
+        });
     }
-}
 
+    
+    private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
+        char c = evt.getKeyChar();
 
+        if (Character.isDigit(c)) {
+            if (currentField.getText().length() == 0) {
+                currentField.setText(String.valueOf(c));
+                evt.consume(); // prevent duplicate input
 
-
+                if (nextField != null) {
+                    nextField.requestFocus();
+                }
+            } else {
+                evt.consume(); // block input if already filled
+            }
+        } else if (!Character.isISOControl(c)) {
+            evt.consume(); // block non-digit input
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -60,7 +82,10 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         jTextField3 = new javax.swing.JTextField();
         jTextField4 = new javax.swing.JTextField();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setMaximumSize(null);
+        setPreferredSize(null);
+        setResizable(false);
 
         jLabel1.setText("SET YOUR PIN");
 
@@ -110,79 +135,77 @@ public class PinPasswordHabit extends javax.swing.JFrame {
                         .addGap(41, 41, 41)
                         .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(23, 23, 23)
+                        .addGap(28, 28, 28)
                         .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(39, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(40, 40, 40)
                 .addComponent(jLabel1)
-                .addGap(59, 59, 59)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(104, Short.MAX_VALUE))
+                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
-
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jTextField1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyPressed
         // TODO add your handling code here:
         restrictToSingleDigit(evt, jTextField1, jTextField2);
 
-        
+
     }//GEN-LAST:event_jTextField1KeyPressed
 
     private void jTextField2KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField2KeyPressed
         // TODO add your handling code here:
-          restrictToSingleDigit(evt, jTextField2, jTextField3);
+        restrictToSingleDigit(evt, jTextField2, jTextField3);
 
     }//GEN-LAST:event_jTextField2KeyPressed
 
     private void jTextField3KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField3KeyPressed
         // TODO add your handling code here:
-         restrictToSingleDigit(evt, jTextField3, jTextField4);
+        restrictToSingleDigit(evt, jTextField3, jTextField4);
 
     }//GEN-LAST:event_jTextField3KeyPressed
 
     private void jTextField4KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField4KeyPressed
         // TODO add your handling code here:
-           restrictToSingleDigit(evt, jTextField4, null);
+        restrictToSingleDigit(evt, jTextField4, null);
 
     }//GEN-LAST:event_jTextField4KeyPressed
 
     private void jTextField1KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyTyped
         // TODO add your handling code here:
-         restrictToSingleDigit(evt, jTextField1, jTextField2);
-    
+        restrictToSingleDigit(evt, jTextField1, jTextField2);
+
     }//GEN-LAST:event_jTextField1KeyTyped
 
     private void jTextField2KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField2KeyTyped
         // TODO add your handling code here:\
-         restrictToSingleDigit(evt, jTextField2, jTextField3);
+        restrictToSingleDigit(evt, jTextField2, jTextField3);
 
     }//GEN-LAST:event_jTextField2KeyTyped
 
     private void jTextField3KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField3KeyTyped
         // TODO add your handling code here:
-          restrictToSingleDigit(evt, jTextField3, jTextField4);
+        restrictToSingleDigit(evt, jTextField3, jTextField4);
 
     }//GEN-LAST:event_jTextField3KeyTyped
 
     private void jTextField4KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField4KeyTyped
         // TODO add your handling code here:
-         restrictToSingleDigit(evt, jTextField4, null);
+        restrictToSingleDigit(evt, jTextField4, null);
 
 
     }//GEN-LAST:event_jTextField4KeyTyped
@@ -197,14 +220,10 @@ public class PinPasswordHabit extends javax.swing.JFrame {
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            // Set FlatLaf Look and Feel
+            javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
         }
         //</editor-fold>
 
