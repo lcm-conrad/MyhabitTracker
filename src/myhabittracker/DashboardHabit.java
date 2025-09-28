@@ -4,12 +4,16 @@
  */
 package myhabittracker;
 
+import com.formdev.flatlaf.FlatLightLaf;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 /**
  *
  * @author asus
  */
 public class DashboardHabit extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DashboardHabit.class.getName());
 
     /**
@@ -17,6 +21,35 @@ public class DashboardHabit extends javax.swing.JFrame {
      */
     public DashboardHabit() {
         initComponents();
+
+        // Formatter for nice column header labels
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+
+        // Build column names: Habit + today + past 5 days
+        String[] columnNames = new String[7];
+        columnNames[0] = "Habit";
+
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i < 6; i++) {
+            columnNames[i + 1] = today.minusDays(i).format(formatter);
+        }
+
+        // Set custom model with Boolean checkboxes
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+                new Object[][]{},
+                columnNames
+        ) {
+            Class[] types = new Class[]{
+                java.lang.String.class, // Habit column
+                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class,
+                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class
+            };
+
+            @Override
+            public Class getColumnClass(int columnIndex) {
+                return types[columnIndex];
+            }
+        });
     }
 
     /**
@@ -29,8 +62,9 @@ public class DashboardHabit extends javax.swing.JFrame {
     private void initComponents() {
 
         jCheckBoxMenuItem1 = new javax.swing.JCheckBoxMenuItem();
-        jButton1 = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
+        addHabit = new javax.swing.JButton();
+        LockButton = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
 
         jCheckBoxMenuItem1.setSelected(true);
@@ -38,10 +72,17 @@ public class DashboardHabit extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jButton1.setText("add Habit");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        addHabit.setText("Add Habit");
+        addHabit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                addHabitActionPerformed(evt);
+            }
+        });
+
+        LockButton.setText("Lock");
+        LockButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LockButtonActionPerformed(evt);
             }
         });
 
@@ -50,43 +91,62 @@ public class DashboardHabit extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4", "Title 5"
+
             }
         ));
-        jTable1.setShowGrid(true);
-        jTable1.setShowVerticalLines(false);
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane2.setViewportView(jTable1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton1)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE))
+                        .addComponent(addHabit)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 232, Short.MAX_VALUE)
+                        .addComponent(LockButton)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jButton1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 303, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(addHabit)
+                    .addComponent(LockButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
-        
-    }//GEN-LAST:event_jButton1ActionPerformed
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+
+        // Create habit name (you can later replace this with user input dialog)
+        String habitName = "New Habit";
+
+    // Create row data: first col = habit name, others = unchecked boxes (false)
+    Object[] rowData = new Object[7];
+    rowData[0] = habitName;
+    for (int i = 1; i < 7; i++) {
+        rowData[i] = false; // unchecked by default
+    }
+
+        // Add row to table
+        model.addRow(rowData);
+    }//GEN-LAST:event_addHabitActionPerformed
+
+    private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
+        // TODO add your handling code here:
+
+    }//GEN-LAST:event_LockButtonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -98,15 +158,11 @@ public class DashboardHabit extends javax.swing.JFrame {
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
+        // Set FlatLaf Look and Feel
+        javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
+    } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
+    }
         //</editor-fold>
 
         /* Create and display the form */
@@ -114,9 +170,10 @@ public class DashboardHabit extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton LockButton;
+    private javax.swing.JButton addHabit;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables
 }
