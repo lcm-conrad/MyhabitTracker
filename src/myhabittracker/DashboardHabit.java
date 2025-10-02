@@ -8,6 +8,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.prefs.Preferences;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -23,7 +24,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     public DashboardHabit() {
         initComponents();
         setLocationRelativeTo(null);
-        Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
+        Preferences prefs = Preferences.userNodeForPackage(this.getClass());
 
         // Restore last position and size if available
         int x = prefs.getInt("windowX", -1);
@@ -33,6 +34,9 @@ public class DashboardHabit extends javax.swing.JFrame {
 
         if (x != -1 && y != -1 && w > 0 && h > 0) {
             setBounds(x, y, w, h);
+        } else {
+            pack(); // or leave the NetBeans-designed size
+            setLocationRelativeTo(null);
         }
 
         // Save position & size on close
@@ -90,6 +94,7 @@ public class DashboardHabit extends javax.swing.JFrame {
         LockButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        fileMenu = new javax.swing.JComboBox<>();
 
         jCheckBoxMenuItem1.setSelected(true);
         jCheckBoxMenuItem1.setText("jCheckBoxMenuItem1");
@@ -121,28 +126,38 @@ public class DashboardHabit extends javax.swing.JFrame {
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
+        fileMenu.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Options", "Export", "Import"}));
+        fileMenu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                fileMenuActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 621, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(addHabit)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 455, Short.MAX_VALUE)
-                        .addComponent(LockButton)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(LockButton)
+                        .addGap(18, 18, 18)
+                        .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(29, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(addHabit)
-                    .addComponent(LockButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 111, Short.MAX_VALUE)
+                    .addComponent(LockButton)
+                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(35, 35, 35)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -153,19 +168,8 @@ public class DashboardHabit extends javax.swing.JFrame {
     private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
         javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-
-        // Create habit name (you can later replace this with user input dialog)
-        String habitName = "New Habit";
-
-        // Create row data: first col = habit name, others = unchecked boxes (false)
-        Object[] rowData = new Object[7];
-        rowData[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            rowData[i] = false; // unchecked by default
-        }
-
-        // Add row to table
-        model.addRow(rowData);
+        addHabit habitWindow = new addHabit(model);
+        habitWindow.setVisible(true);
     }//GEN-LAST:event_addHabitActionPerformed
 
     private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
@@ -175,6 +179,33 @@ public class DashboardHabit extends javax.swing.JFrame {
         pinWindow.setVisible(true);
 
     }//GEN-LAST:event_LockButtonActionPerformed
+
+    private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed
+        // TODO add your handling code here:
+        String selected = (String) fileMenu.getSelectedItem();
+        switch (selected) {
+            case "Export" -> {
+                exportHabits();
+                fileMenu.setSelectedIndex(0); // reset
+            }
+            case "Import" -> {
+                importHabits();
+                fileMenu.setSelectedIndex(0); // reset
+            }
+            default -> {
+                // do nothing
+            }
+        }
+    }//GEN-LAST:event_fileMenuActionPerformed
+    private void exportHabits() {
+        JOptionPane.showMessageDialog(this, "Exporting habits...");
+        // TODO: write table data to CSV/Excel
+    }
+
+    private void importHabits() {
+        JOptionPane.showMessageDialog(this, "Importing habits...");
+        // TODO: load table data from CSV/Excel
+    }
 
     /**
      * @param args the command line arguments
@@ -200,6 +231,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton LockButton;
     private javax.swing.JButton addHabit;
+    private javax.swing.JComboBox<String> fileMenu;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;

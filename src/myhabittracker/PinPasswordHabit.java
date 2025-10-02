@@ -23,29 +23,6 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         setResizable(false);           // lock it to that size
         setTitle("Enter PIN");        // optional
         setLocationRelativeTo(null);
-
-        Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
-
-        // Restore last position
-        int x = prefs.getInt("windowX", -1);
-        int y = prefs.getInt("windowY", -1);
-        int w = prefs.getInt("windowW", -1);
-        int h = prefs.getInt("windowH", -1);
-
-        if (x != -1 && y != -1 && w > 0 && h > 0) {
-            setBounds(x, y, w, h);
-        }
-
-        // Save position & size on close
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                prefs.putInt("windowX", getX());
-                prefs.putInt("windowY", getY());
-                prefs.putInt("windowW", getWidth());
-                prefs.putInt("windowH", getHeight());
-            }
-        });
     }
 
     private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
