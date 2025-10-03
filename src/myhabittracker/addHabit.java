@@ -4,14 +4,12 @@
  */
 package myhabittracker;
 
-import java.util.prefs.Preferences;
 
 /**
  *
  * @author asus
  */
 public class addHabit extends javax.swing.JFrame {
-
     private javax.swing.table.DefaultTableModel model;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
 
@@ -21,35 +19,9 @@ public class addHabit extends javax.swing.JFrame {
     public addHabit() {
         initComponents();
         setLocationRelativeTo(null);
-        Preferences prefs = Preferences.userNodeForPackage(this.getClass());
-
-        // Restore last position and size if available
-        int x = prefs.getInt("windowX", -1);
-        int y = prefs.getInt("windowY", -1);
-        int w = prefs.getInt("windowW", -1);
-        int h = prefs.getInt("windowH", -1);
-
-        if (x != -1 && y != -1 && w > 0 && h > 0) {
-            setBounds(x, y, w, h);
-        } else {
-            pack(); // or leave the NetBeans-designed size
-            setLocationRelativeTo(null);
-        }
-
-        // Save position & size on close
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                prefs.putInt("windowX", getX());
-                prefs.putInt("windowY", getY());
-                prefs.putInt("windowW", getWidth());
-                prefs.putInt("windowH", getHeight());
-            }
-        });
                 setDefaultCloseOperation(DISPOSE_ON_CLOSE); // safer
 
     }
-
     public addHabit(javax.swing.table.DefaultTableModel model) {
         this();
         this.model = model;
