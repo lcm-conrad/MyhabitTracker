@@ -68,6 +68,18 @@ public class YesNoJFrame extends javax.swing.JFrame {
             }
         });
 
+        QuestionTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                QuestionTextFieldActionPerformed(evt);
+            }
+        });
+
+        FrequencyTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                FrequencyTextFieldActionPerformed(evt);
+            }
+        });
+
         ClockButton.setText("Set");
 
         ClockTextField.addActionListener(new java.awt.event.ActionListener() {
@@ -183,6 +195,14 @@ public class YesNoJFrame extends javax.swing.JFrame {
         // Close the YesNoJFrame after saving
         this.dispose();
     }//GEN-LAST:event_SaveButtonActionPerformed
+
+    private void QuestionTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_QuestionTextFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_QuestionTextFieldActionPerformed
+
+    private void FrequencyTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FrequencyTextFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_FrequencyTextFieldActionPerformed
 
     /**
      * @param args the command line arguments
