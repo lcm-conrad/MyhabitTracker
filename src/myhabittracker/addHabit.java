@@ -10,8 +10,9 @@ package myhabittracker;
  */
 public class addHabit extends javax.swing.JFrame {
 
-    private HabitPanel SetHabitWindow;
-    private DashboardHabit dashboard;
+    private YesNoJFrame YesNoWindow;
+    private MeasurableJFrame setMeasurableWindow;
+    private final DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
 
     /**
@@ -21,21 +22,34 @@ public class addHabit extends javax.swing.JFrame {
     public addHabit(DashboardHabit dashboard) {
         initComponents();
         this.dashboard = dashboard;   // ✅ correctly link dashboard
-
-        setLocationRelativeTo(null);
+        setSize(getPreferredSize());   // use the size you set in Designer
+        setLocationRelativeTo(null);   // center on screen
+        setResizable(false);  
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
-    public void openHabitPanel() {
-        if (SetHabitWindow == null || !SetHabitWindow.isShowing()) {
-            SetHabitWindow = new HabitPanel(dashboard);
-            SetHabitWindow.setVisible(true);
+    public void YesNoPanel() {
+        if (YesNoWindow == null || !YesNoWindow.isShowing()) {
+            YesNoWindow = new YesNoJFrame(dashboard);
+            YesNoWindow.setVisible(true);
         } else {
-            SetHabitWindow.toFront();
-            SetHabitWindow.requestFocus();
+            YesNoWindow.toFront();
+            YesNoWindow.requestFocus();
         }
+        
+        this.dispose();
     }
-
+    
+    public void MeasurablePanel() {
+        if (setMeasurableWindow == null || !setMeasurableWindow.isShowing()) {
+            setMeasurableWindow = new MeasurableJFrame(dashboard);
+            setMeasurableWindow.setVisible(true);
+        } else {
+            setMeasurableWindow.toFront();
+            YesNoWindow.requestFocus();
+        }
+        this.dispose();
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -102,12 +116,12 @@ public class addHabit extends javax.swing.JFrame {
 
     private void yesNobuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_yesNobuttonActionPerformed
         // TODO add your handling code here:
-        openHabitPanel();
+        YesNoPanel();
     }//GEN-LAST:event_yesNobuttonActionPerformed
 
     private void measurableButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_measurableButtonActionPerformed
         // TODO add your handling code here:
-
+        MeasurablePanel();
     }//GEN-LAST:event_measurableButtonActionPerformed
 
     /**

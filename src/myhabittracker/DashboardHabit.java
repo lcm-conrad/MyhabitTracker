@@ -28,7 +28,8 @@ public class DashboardHabit extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
         Preferences prefs = Preferences.userNodeForPackage(this.getClass());
-
+        setTitle("MyHabitsTracker");
+        //icon sa myHabitsTracker
         // Restore last position and size if available
         int x = prefs.getInt("windowX", -1);
         int y = prefs.getInt("windowY", -1);
@@ -52,7 +53,6 @@ public class DashboardHabit extends javax.swing.JFrame {
                 prefs.putInt("windowH", getHeight());
             }
         });
-
         // Formatter for nice column header labels
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
 
@@ -82,6 +82,7 @@ public class DashboardHabit extends javax.swing.JFrame {
             }
         });
     }
+
 public javax.swing.JTable getTable() {
     return jTable1; // or whatever the JTable variable is named
 }
@@ -120,14 +121,6 @@ public javax.swing.JTable getTable() {
             }
         });
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-
-            },
-            new String [] {
-
-            }
-        ));
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 

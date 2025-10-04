@@ -4,27 +4,28 @@
  */
 package myhabittracker;
 
-import javax.swing.table.DefaultTableModel;
-
 /**
  *
  * @author asus
  */
-public class HabitPanel extends javax.swing.JFrame {
+public class YesNoJFrame extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(HabitPanel.class.getName());
-    private DashboardHabit dashboard;
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(YesNoJFrame.class.getName());
+    private final DashboardHabit dashboard;
 
-    public HabitPanel(DashboardHabit dashboard) {
+    public YesNoJFrame(DashboardHabit dashboard) {
         this.dashboard = dashboard;
         initComponents();
+        setSize(getPreferredSize());   // use the size you set in Designer
+        setLocationRelativeTo(null);   // center on screen
+        setResizable(false);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
     }
 
     /**
      * Creates new form HabitPanel
      */
-
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -47,7 +48,7 @@ public class HabitPanel extends javax.swing.JFrame {
         ClockTextField = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextArea1 = new javax.swing.JTextArea();
-        jButton1 = new javax.swing.JButton();
+        SaveButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -79,10 +80,10 @@ public class HabitPanel extends javax.swing.JFrame {
         jTextArea1.setRows(5);
         jScrollPane1.setViewportView(jTextArea1);
 
-        jButton1.setText("Save");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        SaveButton.setText("Save");
+        SaveButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                SaveButtonActionPerformed(evt);
             }
         });
 
@@ -110,7 +111,7 @@ public class HabitPanel extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(6, 6, 6)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jButton1)
+                            .addComponent(SaveButton)
                             .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 398, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(27, Short.MAX_VALUE))
         );
@@ -140,7 +141,7 @@ public class HabitPanel extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jButton1)
+                .addComponent(SaveButton)
                 .addContainerGap(22, Short.MAX_VALUE))
         );
 
@@ -166,22 +167,22 @@ public class HabitPanel extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_ClockTextFieldActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void SaveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveButtonActionPerformed
         // TODO add your handling code here:
-    String habitName = NameTextField.getText();
-    Object[] rowData = new Object[7];
-    rowData[0] = habitName;
-    for (int i = 1; i < 7; i++) {
-        rowData[i] = false;
-    }
+        String habitName = NameTextField.getText();
+        Object[] rowData = new Object[7];
+        rowData[0] = habitName;
+        for (int i = 1; i < 7; i++) {
+            rowData[i] = false;
+        }
 
-    javax.swing.table.DefaultTableModel model = 
-        (javax.swing.table.DefaultTableModel) dashboard.getTable().getModel();
-    model.addRow(rowData);
+        javax.swing.table.DefaultTableModel model
+                = (javax.swing.table.DefaultTableModel) dashboard.getTable().getModel();
+        model.addRow(rowData);
 
-    // Close the HabitPanel after saving
-    this.dispose();
-    }//GEN-LAST:event_jButton1ActionPerformed
+        // Close the YesNoJFrame after saving
+        this.dispose();
+    }//GEN-LAST:event_SaveButtonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -205,7 +206,7 @@ public class HabitPanel extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        //java.awt.EventQueue.invokeLater(() -> new HabitPanel().setVisible(true));
+        //java.awt.EventQueue.invokeLater(() -> new YesNoJFrame().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -218,7 +219,7 @@ public class HabitPanel extends javax.swing.JFrame {
     private javax.swing.JLabel QuestionLabel;
     private javax.swing.JTextField QuestionTextField;
     private javax.swing.JLabel ReminderLabel;
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton SaveButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;

@@ -20,7 +20,6 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         setLocationRelativeTo(null);   // center on screen
         setResizable(false);           // lock it to that size
         setTitle("Enter PIN");        // optional
-        setLocationRelativeTo(null);
     }
 
     private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
