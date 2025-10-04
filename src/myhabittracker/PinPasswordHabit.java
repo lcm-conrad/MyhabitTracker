@@ -8,14 +8,56 @@ import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.event.KeyEvent;
 import java.util.prefs.Preferences;
 import javax.swing.JTextField;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.*;
+
+
 
 public class PinPasswordHabit extends javax.swing.JFrame {
-
+    private static final Preferences prefs = Preferences.userNodeForPackage(PinPasswordHabit.class);
+    private static final String PIN_KEY = "userPIN";
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PinPasswordHabit.class.getName());
 
+    
     /**
      * Creates new form PinPassword
      */
+    // Helper to get the full PIN from 4 fields
+private String getPin(javax.swing.JTextField... fields) {
+    StringBuilder pin = new StringBuilder();
+    for (JTextField field : fields) {
+        pin.append(field.getText());
+    }
+    return pin.toString();
+}
+
+   // Verify if both PINs match
+
+    private void verifyPins() {
+    String pin1 = getPin(jTextField1, jTextField2, jTextField3, jTextField4);
+    String pin2 = getPin(jTextField5, jTextField6, jTextField7, jTextField8);
+
+    if (pin1.equals(pin2) && pin1.length() == 4) {
+        javax.swing.JOptionPane.showMessageDialog(this, "✅ PIN successfully set!");
+        
+        // Save to Preferences
+        prefs.put(PIN_KEY, pin1);
+
+        // Save to Excel
+        savePinToExcel(pin1);
+
+    } else {
+        javax.swing.JOptionPane.showMessageDialog(this, "❌ PINs do not match, please try again.");
+        
+        // Clear both sets of PIN fields
+        jTextField1.setText(""); jTextField2.setText(""); jTextField3.setText(""); jTextField4.setText("");
+        jTextField5.setText(""); jTextField6.setText(""); jTextField7.setText(""); jTextField8.setText("");
+        
+        jTextField1.requestFocus(); // restart at first field
+    }
+}
+
     public PinPasswordHabit() {
         initComponents();
         setSize(getPreferredSize());   // use the size you set in Designer
@@ -23,8 +65,13 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         setResizable(false);           // lock it to that size
         setTitle("Enter PIN");        // optional
         setLocationRelativeTo(null);
+    String savedPin = prefs.get(PIN_KEY, null);
+        if (savedPin != null) {
+        javax.swing.JOptionPane.showMessageDialog(this, "ℹ️ A PIN is already set.");
     }
-
+    }
+    
+    
     private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
         char c = evt.getKeyChar();
 
@@ -43,6 +90,49 @@ public class PinPasswordHabit extends javax.swing.JFrame {
             evt.consume(); // block non-digit input
         }
     }
+    private void savePinToExcel(String pin) {
+    String fileName = "PinRecords.xlsx"; // file will be created in project root
+    try {
+        Workbook workbook;
+        Sheet sheet;
+        File file = new File(fileName);
+
+        if (file.exists()) {
+            // If file exists, open it
+            FileInputStream fis = new FileInputStream(file);
+            workbook = new XSSFWorkbook(fis);
+            fis.close();
+            sheet = workbook.getSheetAt(0);
+        } else {
+            // If file doesn’t exist, create new workbook & sheet
+            workbook = new XSSFWorkbook();
+            sheet = workbook.createSheet("PIN Data");
+
+            // Create header row
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Timestamp");
+            header.createCell(1).setCellValue("PIN");
+        }
+
+        // Append new PIN record
+        int lastRow = sheet.getPhysicalNumberOfRows();
+        Row row = sheet.createRow(lastRow);
+        row.createCell(0).setCellValue(java.time.LocalDateTime.now().toString());
+        row.createCell(1).setCellValue(pin);
+
+        // Write back to file
+        FileOutputStream fos = new FileOutputStream(fileName);
+        workbook.write(fos);
+        fos.close();
+        workbook.close();
+
+        javax.swing.JOptionPane.showMessageDialog(this, "✅ PIN saved to Excel file: " + fileName);
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this, "❌ Failed to save PIN to Excel: " + e.getMessage());
+        e.printStackTrace();
+    }
+}
+     
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -72,6 +162,11 @@ public class PinPasswordHabit extends javax.swing.JFrame {
 
         jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField1.setMaximumSize(null);
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
         jTextField1.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 jTextField1KeyTyped(evt);
@@ -80,6 +175,11 @@ public class PinPasswordHabit extends javax.swing.JFrame {
 
         jTextField2.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField2.setMaximumSize(null);
+        jTextField2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField2ActionPerformed(evt);
+            }
+        });
         jTextField2.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 jTextField2KeyTyped(evt);
@@ -88,6 +188,11 @@ public class PinPasswordHabit extends javax.swing.JFrame {
 
         jTextField3.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField3.setMaximumSize(null);
+        jTextField3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField3ActionPerformed(evt);
+            }
+        });
         jTextField3.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 jTextField3KeyTyped(evt);
@@ -233,19 +338,31 @@ public class PinPasswordHabit extends javax.swing.JFrame {
 
     private void jTextField8KeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField8KeyTyped
         // TODO add your handling code here:
-        restrictToSingleDigit(evt, jTextField8, null);
-
+        restrictToSingleDigit(evt, jTextField8,null);
+    if (jTextField8.getText().length() == 1) {
+        verifyPins();
+    }
     }//GEN-LAST:event_jTextField8KeyTyped
 
     private void jTextField4KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField4KeyPressed
         // TODO add your handling code here:
-        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-            jTextField5.requestFocus();   // move to jTextField5
-            evt.consume();
-        } else {
-            restrictToSingleDigit(evt, jTextField4, null);
+       if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+        jTextField5.requestFocus();   // move to jTextField5
+        evt.consume();
         }
     }//GEN-LAST:event_jTextField4KeyPressed
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField2ActionPerformed
+
+    private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField3ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -256,17 +373,15 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
-        try {
-            // Set FlatLaf Look and Feel
-            javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new PinPasswordHabit().setVisible(true));
+          try {
+        // Better way to apply FlatLaf
+        FlatLightLaf.setup();
+    } catch (Exception ex) {
+        logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
     }
+
+    java.awt.EventQueue.invokeLater(() -> new PinPasswordHabit().setVisible(true));
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
