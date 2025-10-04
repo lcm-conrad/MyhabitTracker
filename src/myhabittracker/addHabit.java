@@ -4,57 +4,52 @@
  */
 package myhabittracker;
 
-import java.util.prefs.Preferences;
-
 /**
  *
  * @author asus
  */
 public class addHabit extends javax.swing.JFrame {
 
-    private javax.swing.table.DefaultTableModel model;
+    private YesNoJFrame YesNoWindow;
+    private MeasurableJFrame setMeasurableWindow;
+    private final DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
 
     /**
      * Creates new form OptionPanel
+     * @param dashboard
      */
-    public addHabit() {
+    public addHabit(DashboardHabit dashboard) {
         initComponents();
-        setLocationRelativeTo(null);
-        Preferences prefs = Preferences.userNodeForPackage(this.getClass());
+        this.dashboard = dashboard;   // ✅ correctly link dashboard
+        setSize(getPreferredSize());   // use the size you set in Designer
+        setLocationRelativeTo(null);   // center on screen
+        setResizable(false);  
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    }
 
-        // Restore last position and size if available
-        int x = prefs.getInt("windowX", -1);
-        int y = prefs.getInt("windowY", -1);
-        int w = prefs.getInt("windowW", -1);
-        int h = prefs.getInt("windowH", -1);
-
-        if (x != -1 && y != -1 && w > 0 && h > 0) {
-            setBounds(x, y, w, h);
+    public void YesNoPanel() {
+        if (YesNoWindow == null || !YesNoWindow.isShowing()) {
+            YesNoWindow = new YesNoJFrame(dashboard);
+            YesNoWindow.setVisible(true);
         } else {
-            pack(); // or leave the NetBeans-designed size
-            setLocationRelativeTo(null);
+            YesNoWindow.toFront();
+            YesNoWindow.requestFocus();
         }
-
-        // Save position & size on close
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                prefs.putInt("windowX", getX());
-                prefs.putInt("windowY", getY());
-                prefs.putInt("windowW", getWidth());
-                prefs.putInt("windowH", getHeight());
-            }
-        });
-                setDefaultCloseOperation(DISPOSE_ON_CLOSE); // safer
-
+        
+        this.dispose();
     }
-
-    public addHabit(javax.swing.table.DefaultTableModel model) {
-        this();
-        this.model = model;
+    
+    public void MeasurablePanel() {
+        if (setMeasurableWindow == null || !setMeasurableWindow.isShowing()) {
+            setMeasurableWindow = new MeasurableJFrame(dashboard);
+            setMeasurableWindow.setVisible(true);
+        } else {
+            setMeasurableWindow.toFront();
+            YesNoWindow.requestFocus();
+        }
+        this.dispose();
     }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -121,19 +116,12 @@ public class addHabit extends javax.swing.JFrame {
 
     private void yesNobuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_yesNobuttonActionPerformed
         // TODO add your handling code here:
-
-        String habitName = "New Habit"; // later: use user input
-        Object[] rowData = new Object[7];
-        rowData[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            rowData[i] = false;
-        }
-        model.addRow(rowData);
+        YesNoPanel();
     }//GEN-LAST:event_yesNobuttonActionPerformed
 
     private void measurableButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_measurableButtonActionPerformed
         // TODO add your handling code here:
-
+        MeasurablePanel();
     }//GEN-LAST:event_measurableButtonActionPerformed
 
     /**
@@ -158,7 +146,12 @@ public class addHabit extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new addHabit().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> {
+            DashboardHabit dashboard = new DashboardHabit(); // main dashboard
+            dashboard.setVisible(true);
+            addHabit adder = new addHabit(dashboard);
+            adder.setVisible(true);
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -16,16 +16,20 @@ import javax.swing.JOptionPane;
  */
 public class DashboardHabit extends javax.swing.JFrame {
 
+    private addHabit habitWindow;
+    private PinPasswordHabit PinWindow;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DashboardHabit.class.getName());
 
     /**
      * Creates new form backScreen
      */
+    
     public DashboardHabit() {
         initComponents();
         setLocationRelativeTo(null);
         Preferences prefs = Preferences.userNodeForPackage(this.getClass());
-
+        setTitle("MyHabitsTracker");
+        //icon sa myHabitsTracker
         // Restore last position and size if available
         int x = prefs.getInt("windowX", -1);
         int y = prefs.getInt("windowY", -1);
@@ -49,7 +53,6 @@ public class DashboardHabit extends javax.swing.JFrame {
                 prefs.putInt("windowH", getHeight());
             }
         });
-
         // Formatter for nice column header labels
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
 
@@ -80,6 +83,9 @@ public class DashboardHabit extends javax.swing.JFrame {
         });
     }
 
+public javax.swing.JTable getTable() {
+    return jTable1; // or whatever the JTable variable is named
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -115,14 +121,6 @@ public class DashboardHabit extends javax.swing.JFrame {
             }
         });
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-
-            },
-            new String [] {
-
-            }
-        ));
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
@@ -167,17 +165,25 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
-        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-        addHabit habitWindow = new addHabit(model);
+    if (habitWindow == null || !habitWindow.isShowing()) {
+        habitWindow = new addHabit(this); // ✅ pass the current DashboardHabit
         habitWindow.setVisible(true);
+    } else {
+        habitWindow.toFront();
+        habitWindow.requestFocus();
+    }
     }//GEN-LAST:event_addHabitActionPerformed
 
     private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
         // TODO add your handling code here:
         // Open the PinPasswordHabit window
-        PinPasswordHabit pinWindow = new PinPasswordHabit();
-        pinWindow.setVisible(true);
-
+        if (PinWindow == null || !PinWindow.isShowing()) {
+            PinWindow = new PinPasswordHabit();
+            PinWindow.setVisible(true);
+        } else {
+            PinWindow.toFront();
+            PinWindow.requestFocus();
+        }
     }//GEN-LAST:event_LockButtonActionPerformed
 
     private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed

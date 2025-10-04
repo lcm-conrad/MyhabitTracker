@@ -6,17 +6,19 @@ package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.event.KeyEvent;
-import java.util.prefs.Preferences;
 import javax.swing.JTextField;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
+import java.util.prefs.Preferences;
 
 
 
 public class PinPasswordHabit extends javax.swing.JFrame {
+
     private static final Preferences prefs = Preferences.userNodeForPackage(PinPasswordHabit.class);
     private static final String PIN_KEY = "userPIN";
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PinPasswordHabit.class.getName());
 
     
@@ -64,10 +66,12 @@ private String getPin(javax.swing.JTextField... fields) {
         setLocationRelativeTo(null);   // center on screen
         setResizable(false);           // lock it to that size
         setTitle("Enter PIN");        // optional
+
         setLocationRelativeTo(null);
     String savedPin = prefs.get(PIN_KEY, null);
         if (savedPin != null) {
         javax.swing.JOptionPane.showMessageDialog(this, "ℹ️ A PIN is already set.");
+
     }
     }
     
