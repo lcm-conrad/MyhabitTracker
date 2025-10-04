@@ -41,22 +41,35 @@ private String getPin(javax.swing.JTextField... fields) {
     String pin2 = getPin(jTextField5, jTextField6, jTextField7, jTextField8);
 
     if (pin1.equals(pin2) && pin1.length() == 4) {
-        javax.swing.JOptionPane.showMessageDialog(this, "✅ PIN successfully set!");
-        
-        // Save to Preferences
-        prefs.put(PIN_KEY, pin1);
 
-        // Save to Excel
+        // ✅ Step 2: Check if PIN already exists in Excel
+        if (pinExistsInExcel(pin1)) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "⚠️ PIN already exists in database. Please choose another.");
+
+            // clear fields
+            jTextField1.setText(""); jTextField2.setText(""); 
+            jTextField3.setText(""); jTextField4.setText("");
+            jTextField5.setText(""); jTextField6.setText(""); 
+            jTextField7.setText(""); jTextField8.setText("");
+            jTextField1.requestFocus();
+            return; // stop here, don’t save duplicate
+        }
+
+        // ✅ Safe to save since it's not a duplicate
+        javax.swing.JOptionPane.showMessageDialog(this, "✅ PIN successfully set!");
+        prefs.put(PIN_KEY, pin1);
         savePinToExcel(pin1);
 
     } else {
         javax.swing.JOptionPane.showMessageDialog(this, "❌ PINs do not match, please try again.");
         
-        // Clear both sets of PIN fields
-        jTextField1.setText(""); jTextField2.setText(""); jTextField3.setText(""); jTextField4.setText("");
-        jTextField5.setText(""); jTextField6.setText(""); jTextField7.setText(""); jTextField8.setText("");
-        
-        jTextField1.requestFocus(); // restart at first field
+        // clear both sets
+        jTextField1.setText(""); jTextField2.setText(""); 
+        jTextField3.setText(""); jTextField4.setText("");
+        jTextField5.setText(""); jTextField6.setText(""); 
+        jTextField7.setText(""); jTextField8.setText("");
+        jTextField1.requestFocus();
     }
 }
 
@@ -74,7 +87,35 @@ private String getPin(javax.swing.JTextField... fields) {
 
     }
     }
-    
+    private boolean pinExistsInExcel(String pin) {
+    String fileName = "PinRecords.xlsx";
+    File file = new File(fileName);
+
+    if (!file.exists()) {
+        return false; // no Excel yet, so no PINs stored
+    }
+
+    try (FileInputStream fis = new FileInputStream(file);
+         Workbook workbook = new XSSFWorkbook(fis)) {
+
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // start from row 1 (row 0 is header)
+        for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+            Row row = sheet.getRow(i);
+            if (row != null) {
+                Cell pinCell = row.getCell(1); // column 1 = PIN
+                if (pinCell != null && pin.equals(pinCell.getStringCellValue())) {
+                    return true; // PIN already exists
+                }
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return false; // not found
+}
     
     private void restrictToSingleDigit(KeyEvent evt, JTextField currentField, JTextField nextField) {
         char c = evt.getKeyChar();
