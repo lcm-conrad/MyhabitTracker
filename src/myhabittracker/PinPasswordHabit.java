@@ -9,7 +9,6 @@ import java.awt.event.KeyEvent;
 import javax.swing.JTextField;
 
 public class PinPasswordHabit extends javax.swing.JFrame {
-    private static PinPasswordHabit instance; // singleton-like
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PinPasswordHabit.class.getName());
 
     /**
@@ -41,19 +40,6 @@ public class PinPasswordHabit extends javax.swing.JFrame {
         } else if (!Character.isISOControl(c)) {
             evt.consume(); // block non-digit input
         }
-    }
-    
-    
-    public static PinPasswordHabit getInstance() {
-        if (instance == null) {
-            instance = new PinPasswordHabit();
-        }
-        return instance;
-    }
-        @Override
-    public void dispose() {
-        super.dispose();
-        instance = null; // allow reopening after closing
     }
 
     /**

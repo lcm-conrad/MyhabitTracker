@@ -15,13 +15,15 @@ import javax.swing.JOptionPane;
  * @author asus
  */
 public class DashboardHabit extends javax.swing.JFrame {
-private addHabit habitWindow; 
-private PinPasswordHabit PinWindow;
+
+    private addHabit habitWindow;
+    private PinPasswordHabit PinWindow;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DashboardHabit.class.getName());
 
     /**
      * Creates new form backScreen
      */
+    
     public DashboardHabit() {
         initComponents();
         setLocationRelativeTo(null);
@@ -80,7 +82,9 @@ private PinPasswordHabit PinWindow;
             }
         });
     }
-
+public javax.swing.JTable getTable() {
+    return jTable1; // or whatever the JTable variable is named
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -168,26 +172,25 @@ private PinPasswordHabit PinWindow;
 
     private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
-        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-if (habitWindow == null || !habitWindow.isShowing()) {
-    habitWindow = new addHabit(model);
-    habitWindow.setVisible(true);
-} else {
-    habitWindow.toFront();
-    habitWindow.requestFocus();
-}
+    if (habitWindow == null || !habitWindow.isShowing()) {
+        habitWindow = new addHabit(this); // ✅ pass the current DashboardHabit
+        habitWindow.setVisible(true);
+    } else {
+        habitWindow.toFront();
+        habitWindow.requestFocus();
+    }
     }//GEN-LAST:event_addHabitActionPerformed
 
     private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
         // TODO add your handling code here:
         // Open the PinPasswordHabit window
-if (PinWindow == null || !PinWindow.isShowing()) {
-    PinWindow = new PinPasswordHabit();
-    PinWindow.setVisible(true);
-} else {
-    PinWindow.toFront();
-    PinWindow.requestFocus();
-}
+        if (PinWindow == null || !PinWindow.isShowing()) {
+            PinWindow = new PinPasswordHabit();
+            PinWindow.setVisible(true);
+        } else {
+            PinWindow.toFront();
+            PinWindow.requestFocus();
+        }
     }//GEN-LAST:event_LockButtonActionPerformed
 
     private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed

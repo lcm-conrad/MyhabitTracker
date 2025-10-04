@@ -4,27 +4,36 @@
  */
 package myhabittracker;
 
-
 /**
  *
  * @author asus
  */
 public class addHabit extends javax.swing.JFrame {
-    private javax.swing.table.DefaultTableModel model;
+
+    private HabitPanel SetHabitWindow;
+    private DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
 
     /**
      * Creates new form OptionPanel
+     * @param dashboard
      */
-    public addHabit() {
+    public addHabit(DashboardHabit dashboard) {
         initComponents();
-        setLocationRelativeTo(null);
-                setDefaultCloseOperation(DISPOSE_ON_CLOSE); // safer
+        this.dashboard = dashboard;   // ✅ correctly link dashboard
 
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
-    public addHabit(javax.swing.table.DefaultTableModel model) {
-        this();
-        this.model = model;
+
+    public void openHabitPanel() {
+        if (SetHabitWindow == null || !SetHabitWindow.isShowing()) {
+            SetHabitWindow = new HabitPanel(dashboard);
+            SetHabitWindow.setVisible(true);
+        } else {
+            SetHabitWindow.toFront();
+            SetHabitWindow.requestFocus();
+        }
     }
 
     /**
@@ -93,14 +102,7 @@ public class addHabit extends javax.swing.JFrame {
 
     private void yesNobuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_yesNobuttonActionPerformed
         // TODO add your handling code here:
-
-        String habitName = "New Habit"; // later: use user input
-        Object[] rowData = new Object[7];
-        rowData[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            rowData[i] = false;
-        }
-        model.addRow(rowData);
+        openHabitPanel();
     }//GEN-LAST:event_yesNobuttonActionPerformed
 
     private void measurableButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_measurableButtonActionPerformed
@@ -130,7 +132,12 @@ public class addHabit extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new addHabit().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> {
+            DashboardHabit dashboard = new DashboardHabit(); // main dashboard
+            dashboard.setVisible(true);
+            addHabit adder = new addHabit(dashboard);
+            adder.setVisible(true);
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
