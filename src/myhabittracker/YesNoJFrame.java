@@ -4,6 +4,10 @@
  */
 package myhabittracker;
 
+import java.awt.FlowLayout;
+import javax.swing.JCheckBox;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author asus
@@ -12,15 +16,34 @@ public class YesNoJFrame extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(YesNoJFrame.class.getName());
     private final DashboardHabit dashboard;
+    JCheckBox monCheck, tueCheck, wedCheck, thuCheck, friCheck, satCheck, sunCheck;
 
     public YesNoJFrame(DashboardHabit dashboard) {
         this.dashboard = dashboard;
         initComponents();
         setSize(getPreferredSize());   // use the size you set in Designer
         setLocationRelativeTo(null);   // center on screen
-        setResizable(false);
+        setResizable(true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        daysPanel.setLayout(new FlowLayout());
+        monCheck = new JCheckBox("Mon");
+        tueCheck = new JCheckBox("Tue");
+        wedCheck = new JCheckBox("Wed");
+        thuCheck = new JCheckBox("Thu");
+        friCheck = new JCheckBox("Fri");
+        satCheck = new JCheckBox("Sat");
+        sunCheck = new JCheckBox("Sun");
+
+        daysPanel.add(monCheck);
+        daysPanel.add(tueCheck);
+        daysPanel.add(wedCheck);
+        daysPanel.add(thuCheck);
+        daysPanel.add(friCheck);
+        daysPanel.add(satCheck);
+        daysPanel.add(sunCheck);
+// Hide by default
+        daysPanel.setVisible(false);
     }
 
     /**
@@ -49,6 +72,7 @@ public class YesNoJFrame extends javax.swing.JFrame {
         jTextArea1 = new javax.swing.JTextArea();
         SaveButton = new javax.swing.JButton();
         FreqButton = new javax.swing.JComboBox<>();
+        daysPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -122,10 +146,11 @@ public class YesNoJFrame extends javax.swing.JFrame {
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(ClockButton)
-                                .addComponent(jLabel1)
-                                .addComponent(ReminderLabel))
-                            .addGap(18, 18, 18)
-                            .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(jLabel1))
+                            .addGap(124, 124, 124)
+                            .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(ReminderLabel, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(daysPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(27, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -143,19 +168,22 @@ public class YesNoJFrame extends javax.swing.JFrame {
                 .addComponent(FrequencyLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(FreqButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(10, 10, 10)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(daysPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(2, 2, 2)
                 .addComponent(ReminderLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(ClockButton)
-                    .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(1, 1, 1)
+                        .addComponent(ClockTextField)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(SaveButton)
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addGap(22, 22, 22))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -166,7 +194,9 @@ public class YesNoJFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(13, Short.MAX_VALUE))
         );
 
         pack();
@@ -182,19 +212,16 @@ public class YesNoJFrame extends javax.swing.JFrame {
 
     private void SaveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveButtonActionPerformed
         // TODO add your handling code here:
-        String habitName = NameTextField.getText();
-        Object[] rowData = new Object[7];
-        rowData[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            rowData[i] = false;
-        }
+    String habitName = NameTextField.getText().trim();
+    if (habitName.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter a habit name.");
+        return;
+    }
 
-        javax.swing.table.DefaultTableModel model
-                = (javax.swing.table.DefaultTableModel) dashboard.getTable().getModel();
-        model.addRow(rowData);
+    // dashboard must be a reference to the existing DashboardHabit instance
+    dashboard.addHabitRow(habitName);
 
-        // Close the YesNoJFrame after saving
-        this.dispose();
+    this.dispose();
     }//GEN-LAST:event_SaveButtonActionPerformed
 
     private void QuestionTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_QuestionTextFieldActionPerformed
@@ -203,6 +230,14 @@ public class YesNoJFrame extends javax.swing.JFrame {
 
     private void FreqButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FreqButtonActionPerformed
         // TODO add your handling code here:
+            String selected = (String) FreqButton.getSelectedItem();
+    if ("Weekly".equals(selected)) {
+        daysPanel.setVisible(true);
+    } else {
+        daysPanel.setVisible(false);
+    }
+    revalidate();
+    repaint();
     }//GEN-LAST:event_FreqButtonActionPerformed
 
     /**
@@ -241,6 +276,7 @@ public class YesNoJFrame extends javax.swing.JFrame {
     private javax.swing.JTextField QuestionTextField;
     private javax.swing.JLabel ReminderLabel;
     private javax.swing.JButton SaveButton;
+    private javax.swing.JPanel daysPanel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;

@@ -4,6 +4,8 @@
  */
 package myhabittracker;
 
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author asus
@@ -185,19 +187,16 @@ public class MeasurableJFrame extends javax.swing.JFrame {
 
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         // TODO add your handling code here:
-        String habitName = NameTextField.getText();
-        Object[] rowData = new Object[7];
-        rowData[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            rowData[i] = false;
-        }
+    String habitName = NameTextField.getText().trim();
+    if (habitName.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter a habit name.");
+        return;
+    }
 
-        javax.swing.table.DefaultTableModel model
-                = (javax.swing.table.DefaultTableModel) dashboard.getTable().getModel();
-        model.addRow(rowData);
+    // dashboard must be a reference to the existing DashboardHabit instance
+    dashboard.addHabitRow(habitName);
 
-        // Close the Measurable after saving
-        this.dispose();
+    this.dispose();
     }//GEN-LAST:event_saveButtonActionPerformed
 
     /**

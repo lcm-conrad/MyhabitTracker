@@ -5,10 +5,19 @@
 package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.prefs.Preferences;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -18,17 +27,32 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     private addHabit habitWindow;
     private PinPasswordHabit PinWindow;
+    // class-level fields (near top of class)
+    private DefaultTableModel model;
+    private ImageIcon xIcon, checkIcon, doneIcon;
+
+    // State constants
+    private static final int STATE_X = 0;
+    private static final int STATE_CHECK = 1;
+    private static final int STATE_DONE = 2;
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DashboardHabit.class.getName());
 
     /**
      * Creates new form backScreen
      */
-    
     public DashboardHabit() {
         initComponents();
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+// ✅ Load icons safely
+        xIcon = new ImageIcon(getClass().getResource("/resources/x.png"));
+        checkIcon = new ImageIcon(getClass().getResource("/resources/check.png"));
+        doneIcon = new ImageIcon(getClass().getResource("/resources/done.png"));
+
         setLocationRelativeTo(null);
         Preferences prefs = Preferences.userNodeForPackage(this.getClass());
-        setTitle("MyHabitsTracker");
         //icon sa myHabitsTracker
         // Restore last position and size if available
         int x = prefs.getInt("windowX", -1);
@@ -53,10 +77,8 @@ public class DashboardHabit extends javax.swing.JFrame {
                 prefs.putInt("windowH", getHeight());
             }
         });
-        // Formatter for nice column header labels
+        // --- build columns (Habit + 6 days) ---
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-
-        // Build column names: Habit + today + past 5 days
         String[] columnNames = new String[7];
         columnNames[0] = "Habit";
 
@@ -64,28 +86,88 @@ public class DashboardHabit extends javax.swing.JFrame {
         for (int i = 0; i < 6; i++) {
             columnNames[i + 1] = today.minusDays(i).format(formatter);
         }
-
-        // Set custom model with Boolean checkboxes
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
-                new Object[][]{},
-                columnNames
-        ) {
-            Class[] types = new Class[]{
-                java.lang.String.class, // Habit column
-                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class,
-                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class
-            };
+        // ✅ Model uses Integer for icon states
+        model = new DefaultTableModel(new Object[][]{}, columnNames) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 0 ? String.class : Integer.class;
+            }
 
             @Override
-            public Class getColumnClass(int columnIndex) {
-                return types[columnIndex];
+            public boolean isCellEditable(int row, int column) {
+                return false; // Disable editing for all cells to avoid text editor
+            }
+        };
+
+// ✅ Use the NetBeans table
+        jTable1.setModel(model);
+        jTable1.setRowHeight(40);
+
+        // ✅ Tell JTable how to draw Integer cells
+        jTable1.setDefaultRenderer(Integer.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+
+                JLabel label = (JLabel) super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column);
+
+                label.setText(""); // clear text
+                label.setHorizontalAlignment(SwingConstants.CENTER);
+
+                int state = (value instanceof Integer) ? (Integer) value : STATE_X;
+
+                switch (state) {
+                    case STATE_CHECK:
+                        label.setIcon(checkIcon);
+                        break;
+                    case STATE_DONE:
+                        label.setIcon(doneIcon);
+                        break;
+                    default:
+                        label.setIcon(xIcon);
+                        break;
+                }
+
+                return label;
             }
         });
+
+        // ✅ Toggle state on click
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+          int row = jTable1.rowAtPoint(e.getPoint());
+          int col = jTable1.columnAtPoint(e.getPoint());
+          if (row >= 0 && col > 0) {  // Only day columns (col > 0)
+              Object val = model.getValueAt(row, col);
+              int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+              
+              // Binary toggle: Only between X (0) and Check (1); ignore/force-reset Done (2)
+              int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+              
+              model.setValueAt(nextState, row, col);
+              
+          }
+            }
+        });
+        setVisible(true);
     }
 
-public javax.swing.JTable getTable() {
-    return jTable1; // or whatever the JTable variable is named
-}
+    // When a habit is added, we’ll call this later
+    // to populate its default icons
+    // Example usage:
+    // addHabitRow("Drink Water", model, xIcon);
+    public void addHabitRow(String habitName) {
+        Object[] row = new Object[7];
+        row[0] = habitName;
+        for (int i = 1; i < 7; i++) {
+            row[i] = STATE_X;
+        }
+        model.addRow(row);
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -121,6 +203,7 @@ public javax.swing.JTable getTable() {
             }
         });
 
+        jTable1.setFont(new java.awt.Font("Titillium Web SemiBold", 0, 12)); // NOI18N
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
@@ -165,13 +248,13 @@ public javax.swing.JTable getTable() {
 
     private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
-    if (habitWindow == null || !habitWindow.isShowing()) {
-        habitWindow = new addHabit(this); // ✅ pass the current DashboardHabit
-        habitWindow.setVisible(true);
-    } else {
-        habitWindow.toFront();
-        habitWindow.requestFocus();
-    }
+        if (habitWindow == null || !habitWindow.isShowing()) {
+            habitWindow = new addHabit(this); // ✅ pass the current DashboardHabit
+            habitWindow.setVisible(true);
+        } else {
+            habitWindow.toFront();
+            habitWindow.requestFocus();
+        }
     }//GEN-LAST:event_addHabitActionPerformed
 
     private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
@@ -217,20 +300,29 @@ public javax.swing.JTable getTable() {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
         try {
-            // Set FlatLaf Look and Feel
             javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
+            java.util.logging.Logger.getLogger(DashboardHabit.class.getName()).log(
+                    java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
+            // Fallback to system L&F
+            try {
+                javax.swing.UIManager.setLookAndFeel(
+                        javax.swing.UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException fallbackEx) {
+                // Use default if all fails
+            }
         }
         //</editor-fold>
 
         /* Create and display the form */
+        //SwingUtilities.invokeLater(DashboardHabit::new);
         java.awt.EventQueue.invokeLater(() -> new DashboardHabit().setVisible(true));
     }
 
