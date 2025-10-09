@@ -4,7 +4,10 @@
  */
 package myhabittracker;
 
+import java.awt.Component;
 import java.awt.FlowLayout;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 
@@ -21,6 +24,10 @@ public class YesNoJFrame extends javax.swing.JFrame {
     public YesNoJFrame(DashboardHabit dashboard) {
         this.dashboard = dashboard;
         initComponents();
+        
+        // after initComponents() in YesNoJFrame constructor
+ReminderManager.getInstance().start();
+        
         setSize(getPreferredSize());   // use the size you set in Designer
         setLocationRelativeTo(null);   // center on screen
         setResizable(true);
@@ -99,6 +106,11 @@ public class YesNoJFrame extends javax.swing.JFrame {
         });
 
         ClockButton.setText("Set");
+        ClockButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClockButtonActionPerformed(evt);
+            }
+        });
 
         ClockTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -172,11 +184,11 @@ public class YesNoJFrame extends javax.swing.JFrame {
                 .addComponent(daysPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(2, 2, 2)
                 .addComponent(ReminderLabel)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(ClockButton)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(1, 1, 1)
-                        .addComponent(ClockTextField)))
+                        .addComponent(ClockTextField))
+                    .addComponent(ClockButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -226,6 +238,8 @@ public class YesNoJFrame extends javax.swing.JFrame {
 
     private void QuestionTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_QuestionTextFieldActionPerformed
         // TODO add your handling code here:
+        String Question = QuestionTextField.getText().trim();
+        
     }//GEN-LAST:event_QuestionTextFieldActionPerformed
 
     private void FreqButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FreqButtonActionPerformed
@@ -239,6 +253,83 @@ public class YesNoJFrame extends javax.swing.JFrame {
     revalidate();
     repaint();
     }//GEN-LAST:event_FreqButtonActionPerformed
+
+    private void ClockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockButtonActionPerformed
+        // TODO add your handling code here:
+        // inside SaveButtonActionPerformed(...) after you validated/saved the habit
+try {
+    String text = QuestionTextField.getText().trim();
+    if (text.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter habit text.", "Validation", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // read time from ClockTextField - expect format HH:mm (24-hour) or h:mm a if you prefer
+    String timeStr = ClockTextField.getText().trim(); // e.g. "08:00" or "8:00"
+    java.time.LocalTime time;
+    try {
+        time = java.time.LocalTime.parse(timeStr); // expects "HH:mm" or "HH:mm:ss"
+    } catch (Exception ex) {
+        // try permissive parse for h:mm a
+        try {
+            java.time.format.DateTimeFormatter f = java.time.format.DateTimeFormatter.ofPattern("h:mm a");
+            time = java.time.LocalTime.parse(timeStr, f);
+        } catch (Exception ex2) {
+            JOptionPane.showMessageDialog(this, "Please enter time in HH:mm format (e.g. 08:00).", "Invalid time", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+    }
+
+    // Determine frequency and days - adapt to how you store frequency in your UI.
+    Reminder rem = new Reminder();
+    rem.setText(text);
+    // Example: if you have a FreqButton radio that sets a variable frequencyValue:
+    // if (frequencyValue.equals("Daily")) ...
+    // For demo, I assume there's a variable or selection component; adapt below:
+
+    // --- EXAMPLE ASSUMPTION START ---
+    // Suppose you have a JComboBox<String> FrequencyCombo with "Daily" / "Weekly"
+    String freqSelected = "Daily";
+    try { freqSelected = FreqButton.getSelectedItem().toString(); } catch (Exception ign) {}
+    if ("Weekly".equalsIgnoreCase(freqSelected)) {
+        rem.setFrequency(Reminder.Frequency.WEEKLY);
+        // Suppose you have checkboxes for days inside daysPanel (JCheckBox instances)
+        Set<java.time.DayOfWeek> days = new HashSet<>();
+        for (Component c : daysPanel.getComponents()) {
+            if (c instanceof javax.swing.JCheckBox) {
+                javax.swing.JCheckBox cb = (javax.swing.JCheckBox) c;
+                if (cb.isSelected()) {
+                    // set the mapping by checkbox text, e.g. "Mon" -> DayOfWeek.MONDAY
+                    String txt = cb.getText().toUpperCase();
+                    switch (txt) {
+                        case "MON": case "MONDAY": days.add(java.time.DayOfWeek.MONDAY); break;
+                        case "TUE": case "TUES": case "TUESDAY": days.add(java.time.DayOfWeek.TUESDAY); break;
+                        case "WED": case "WEDNESDAY": days.add(java.time.DayOfWeek.WEDNESDAY); break;
+                        case "THU": case "THURSDAY": days.add(java.time.DayOfWeek.THURSDAY); break;
+                        case "FRI": case "FRIDAY": days.add(java.time.DayOfWeek.FRIDAY); break;
+                        case "SAT": case "SATURDAY": days.add(java.time.DayOfWeek.SATURDAY); break;
+                        case "SUN": case "SUNDAY": days.add(java.time.DayOfWeek.SUNDAY); break;
+                    }
+                }
+            }
+        }
+        rem.setDaysOfWeek(days);
+    } else {
+        rem.setFrequency(Reminder.Frequency.DAILY);
+    }
+    // --- EXAMPLE ASSUMPTION END ---
+
+    rem.setTime(time);
+
+    // register
+    ReminderManager.getInstance().addReminder(rem);
+    JOptionPane.showMessageDialog(this, "Reminder saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+} catch (Exception ex) {
+    ex.printStackTrace();
+    JOptionPane.showMessageDialog(this, "Failed to create reminder: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+}
+
+    }//GEN-LAST:event_ClockButtonActionPerformed
 
     /**
      * @param args the command line arguments
