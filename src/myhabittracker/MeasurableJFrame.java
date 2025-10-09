@@ -4,6 +4,14 @@
  */
 package myhabittracker;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.util.HashSet;
+import java.util.Set;
+import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 
 /**
@@ -14,7 +22,15 @@ public class MeasurableJFrame extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MeasurableJFrame.class.getName());
     private final DashboardHabit dashboard;
-
+    JCheckBox monCheck, tueCheck, wedCheck, thuCheck, friCheck, satCheck, sunCheck;
+        // Placeholder text and color
+    private final String NAME_PLACEHOLDER = "e.g. Run";
+    private final String QUESTION_PLACEHOLDER = "e.g. How many km did you cover today?";
+    private final String CLOCK_HH_PLACEHOLDER = "00";
+    private final String CLOCK_MM_PLACEHOLDER = "00";
+    private final String NOTES_PLACEHOLDER = "";
+    private final Color PLACEHOLDER_COLOR = new Color(204, 204, 204);
+    private final Color TEXT_COLOR = Color.BLACK;
     /**
      * Creates new form MeasurablePanel
      *
@@ -23,13 +39,99 @@ public class MeasurableJFrame extends javax.swing.JFrame {
     public MeasurableJFrame(DashboardHabit dashboard) {
         this.dashboard = dashboard;
         initComponents();
+        
+                // after initComponents() in YesNoJFrame constructor
+        ReminderManager.getInstance().start();
+        
         setSize(getPreferredSize());
         setLocationRelativeTo(null);
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+                daysPanel.setLayout(new FlowLayout());
+        monCheck = new JCheckBox("Mon");
+        tueCheck = new JCheckBox("Tue");
+        wedCheck = new JCheckBox("Wed");
+        thuCheck = new JCheckBox("Thu");
+        friCheck = new JCheckBox("Fri");
+        satCheck = new JCheckBox("Sat");
+        sunCheck = new JCheckBox("Sun");
+        
+                daysPanel.add(monCheck);
+        daysPanel.add(tueCheck);
+        daysPanel.add(wedCheck);
+        daysPanel.add(thuCheck);
+        daysPanel.add(friCheck);
+        daysPanel.add(satCheck);
+        daysPanel.add(sunCheck);
+        
+        // Hide by default
+        daysPanel.setVisible(false);
+        // Initialize placeholder behavior
+        setupPlaceholderBehavior();
+    }
+private void setupPlaceholderBehavior() {
+        // NameTextField
+        setupTextFieldPlaceholder(NameTextField, NAME_PLACEHOLDER);
+
+        // QuestionTextField
+        setupTextFieldPlaceholder(QuestionTextField, QUESTION_PLACEHOLDER);
+
+        // ClockTextField (HH)
+        setupTextFieldPlaceholder(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
+
+        // ClockTextField1 (MM)
+        setupTextFieldPlaceholder(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
+
+        // Notes TextArea
+        setupTextAreaPlaceholder(notesArea, NOTES_PLACEHOLDER);
     }
 
+    private void setupTextFieldPlaceholder(javax.swing.JTextField textField, String placeholder) {
+        textField.setForeground(PLACEHOLDER_COLOR);
+        textField.setText(placeholder);
+
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(TEXT_COLOR);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setForeground(PLACEHOLDER_COLOR);
+                    textField.setText(placeholder);
+                }
+            }
+        });
+    }
+    
+       private void setupTextAreaPlaceholder(javax.swing.JTextArea textArea, String placeholder) {
+        textArea.setForeground(PLACEHOLDER_COLOR);
+        textArea.setText(placeholder);
+
+        textArea.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textArea.getText().equals(placeholder)) {
+                    textArea.setText("");
+                    textArea.setForeground(TEXT_COLOR);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textArea.getText().isEmpty()) {
+                    textArea.setForeground(PLACEHOLDER_COLOR);
+                    textArea.setText(placeholder);
+                }
+            }
+        });
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -47,14 +149,21 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         NameTextField = new javax.swing.JTextField();
         QuestionTextField = new javax.swing.JTextField();
-        FrequencyTextField = new javax.swing.JTextField();
-        ClockButton = new javax.swing.JButton();
-        ClockTextField = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        notesArea = new javax.swing.JTextArea();
         saveButton = new javax.swing.JButton();
         UnitLabel = new javax.swing.JLabel();
         UnitTextField = new javax.swing.JTextField();
+        UnitLabel1 = new javax.swing.JLabel();
+        TargetNumTextField = new javax.swing.JTextField();
+        ThresholdComboBox = new javax.swing.JComboBox<>();
+        AMPMCombo = new javax.swing.JComboBox<>();
+        ClockTextFieldMM = new javax.swing.JTextField();
+        ClockTextFieldHH = new javax.swing.JTextField();
+        ClockButton1 = new javax.swing.JButton();
+        FreqButton = new javax.swing.JComboBox<>();
+        ReminderLabel1 = new javax.swing.JLabel();
+        daysPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -74,17 +183,9 @@ public class MeasurableJFrame extends javax.swing.JFrame {
             }
         });
 
-        ClockButton.setText("Set");
-
-        ClockTextField.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ClockTextFieldActionPerformed(evt);
-            }
-        });
-
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        notesArea.setColumns(20);
+        notesArea.setRows(5);
+        jScrollPane1.setViewportView(notesArea);
 
         saveButton.setText("Save");
         saveButton.addActionListener(new java.awt.event.ActionListener() {
@@ -95,6 +196,58 @@ public class MeasurableJFrame extends javax.swing.JFrame {
 
         UnitLabel.setText("Unit:");
 
+        UnitTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                UnitTextFieldActionPerformed(evt);
+            }
+        });
+
+        UnitLabel1.setText("Target:");
+
+        TargetNumTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                TargetNumTextFieldActionPerformed(evt);
+            }
+        });
+
+        ThresholdComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "At least", "At most" }));
+
+        AMPMCombo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "AM", "PM"}));
+
+        ClockTextFieldMM.setForeground(new java.awt.Color(204, 204, 204));
+        ClockTextFieldMM.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        ClockTextFieldMM.setText("00");
+        ClockTextFieldMM.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClockTextFieldMMActionPerformed(evt);
+            }
+        });
+
+        ClockTextFieldHH.setForeground(new java.awt.Color(204, 204, 204));
+        ClockTextFieldHH.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        ClockTextFieldHH.setText("00");
+        ClockTextFieldHH.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClockTextFieldHHActionPerformed(evt);
+            }
+        });
+
+        ClockButton1.setText("Set");
+        ClockButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClockButton1ActionPerformed(evt);
+            }
+        });
+
+        FreqButton.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Daily", "Weekly", "Monthly"}));
+        FreqButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                FreqButtonActionPerformed(evt);
+            }
+        });
+
+        ReminderLabel1.setText(":");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -102,27 +255,41 @@ public class MeasurableJFrame extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(21, 21, 21)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(UnitLabel)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ClockButton)
-                            .addComponent(ReminderLabel))
-                        .addGap(18, 18, 18)
-                        .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(FrequencyTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
-                        .addComponent(QuestionTextField)
-                        .addComponent(FrequencyLabel)
-                        .addComponent(NameLabel)
-                        .addComponent(QuestionLabel)
-                        .addComponent(NameTextField)
-                        .addComponent(jLabel1)
-                        .addComponent(UnitTextField))
+                        .addComponent(ClockButton1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(ClockTextFieldHH, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ReminderLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ClockTextFieldMM, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(AMPMCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(UnitLabel)
+                        .addGap(142, 142, 142)
+                        .addComponent(UnitLabel1))
+                    .addComponent(ReminderLabel)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(6, 6, 6)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(saveButton)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 398, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 398, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(QuestionTextField, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
+                        .addComponent(FrequencyLabel, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(NameLabel, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(QuestionLabel, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(NameTextField, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                            .addComponent(UnitTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 132, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(34, 34, 34)
+                            .addComponent(TargetNumTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 87, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(ThresholdComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(FreqButton, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(daysPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(33, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -137,20 +304,30 @@ public class MeasurableJFrame extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(QuestionTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(UnitLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(UnitTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
-                .addComponent(FrequencyLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(FrequencyTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(ReminderLabel)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(UnitLabel)
+                    .addComponent(UnitLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(ClockButton)
-                    .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(UnitTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(TargetNumTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ThresholdComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
+                .addComponent(FrequencyLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(FreqButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(daysPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(8, 8, 8)
+                .addComponent(ReminderLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ClockButton1)
+                    .addComponent(ClockTextFieldHH)
+                    .addComponent(ClockTextFieldMM)
+                    .addComponent(AMPMCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ReminderLabel1))
+                .addGap(18, 18, 18)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -169,9 +346,9 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
@@ -181,23 +358,178 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_NameTextFieldActionPerformed
 
-    private void ClockTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_ClockTextFieldActionPerformed
-
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         // TODO add your handling code here:
     String habitName = NameTextField.getText().trim();
-    if (habitName.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter a habit name.");
+    String valueText = TargetNumTextField.getText().trim(); // numeric input
+    String unit = UnitTextField.getText().trim();
+
+    if (habitName.isEmpty() || valueText.isEmpty() || unit.isEmpty() || habitName.equals(NAME_PLACEHOLDER)) {
+        JOptionPane.showMessageDialog(this, "Please fill in all fields.");
         return;
     }
 
-    // dashboard must be a reference to the existing DashboardHabit instance
-    dashboard.addHabitRow(habitName);
+    String valueWithUnit = valueText + " " + unit;
 
-    this.dispose();
+    // Add to dashboard
+    dashboard.addMeasurableHabit(habitName, valueWithUnit);
+
+    JOptionPane.showMessageDialog(this, "Habit added successfully!");
+    this.dispose(); // close window
     }//GEN-LAST:event_saveButtonActionPerformed
+
+    private void ClockTextFieldMMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldMMActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ClockTextFieldMMActionPerformed
+
+    private void ClockTextFieldHHActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldHHActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ClockTextFieldHHActionPerformed
+
+    private void ClockButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockButton1ActionPerformed
+        // TODO add your handling code here:
+        // inside SaveButtonActionPerformed(...) after you validated/saved the habit
+        try {
+            String text = QuestionTextField.getText().trim();
+            if (text.isEmpty() || text.equals(QUESTION_PLACEHOLDER)) {
+                JOptionPane.showMessageDialog(this, "Please enter habit text.", "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Get hours, minutes, and AM/PM values
+            String hoursStr = ClockTextFieldHH.getText().trim();
+            String minutesStr = ClockTextFieldMM.getText().trim();
+            String ampm = (String) AMPMCombo.getSelectedItem();
+
+            // Check if placeholder values are still present
+            if (hoursStr.equals(CLOCK_HH_PLACEHOLDER) || minutesStr.equals(CLOCK_MM_PLACEHOLDER)) {
+                JOptionPane.showMessageDialog(this, "Please set a valid reminder time.", "Invalid time", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Validate hours (1-12 for 12-hour format)
+            int hours;
+            try {
+                hours = Integer.parseInt(hoursStr);
+                if (hours < 1 || hours > 12) {
+                    JOptionPane.showMessageDialog(this, "Hours must be between 1 and 12.", "Invalid hours", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Please enter valid hours (1-12).", "Invalid hours", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Validate minutes (0-59)
+            int minutes;
+            try {
+                minutes = Integer.parseInt(minutesStr);
+                if (minutes < 0 || minutes > 59) {
+                    JOptionPane.showMessageDialog(this, "Minutes must be between 0 and 59.", "Invalid minutes", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Please enter valid minutes (0-59).", "Invalid minutes", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Convert to 24-hour format
+            if ("PM".equals(ampm) && hours != 12) {
+                hours += 12;
+            } else if ("AM".equals(ampm) && hours == 12) {
+                hours = 0;
+            }
+
+            // Create LocalTime object
+            java.time.LocalTime time = java.time.LocalTime.of(hours, minutes);
+
+            // Determine frequency and days
+            Reminder rem = new Reminder();
+            rem.setText(text);
+
+            String freqSelected = "Daily";
+            try {
+                freqSelected = FreqButton.getSelectedItem().toString();
+            } catch (Exception ign) {
+            }
+
+            if ("Weekly".equalsIgnoreCase(freqSelected)) {
+                rem.setFrequency(Reminder.Frequency.WEEKLY);
+                Set<java.time.DayOfWeek> days = new HashSet<>();
+                for (Component c : daysPanel.getComponents()) {
+                    if (c instanceof javax.swing.JCheckBox) {
+                        javax.swing.JCheckBox cb = (javax.swing.JCheckBox) c;
+                        if (cb.isSelected()) {
+                            String txt = cb.getText().toUpperCase();
+                            switch (txt) {
+                                case "MON":
+                                case "MONDAY":
+                                days.add(java.time.DayOfWeek.MONDAY);
+                                break;
+                                case "TUE":
+                                case "TUES":
+                                case "TUESDAY":
+                                days.add(java.time.DayOfWeek.TUESDAY);
+                                break;
+                                case "WED":
+                                case "WEDNESDAY":
+                                days.add(java.time.DayOfWeek.WEDNESDAY);
+                                break;
+                                case "THU":
+                                case "THURSDAY":
+                                days.add(java.time.DayOfWeek.THURSDAY);
+                                break;
+                                case "FRI":
+                                case "FRIDAY":
+                                days.add(java.time.DayOfWeek.FRIDAY);
+                                break;
+                                case "SAT":
+                                case "SATURDAY":
+                                days.add(java.time.DayOfWeek.SATURDAY);
+                                break;
+                                case "SUN":
+                                case "SUNDAY":
+                                days.add(java.time.DayOfWeek.SUNDAY);
+                                break;
+                            }
+                        }
+                    }
+                }
+                rem.setDaysOfWeek(days);
+            } else {
+                rem.setFrequency(Reminder.Frequency.DAILY);
+            }
+
+            rem.setTime(time);
+
+            // register
+            ReminderManager.getInstance().addReminder(rem);
+            JOptionPane.showMessageDialog(this, "Reminder saved for " + time.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a")) + ".", "Saved", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to create reminder: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_ClockButton1ActionPerformed
+
+    private void FreqButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FreqButtonActionPerformed
+        // TODO add your handling code here:
+        String selected = (String) FreqButton.getSelectedItem();
+        if ("Weekly".equals(selected)) {
+            daysPanel.setVisible(true);
+        } else {
+            daysPanel.setVisible(false);
+        }
+        revalidate();
+        repaint();
+    }//GEN-LAST:event_FreqButtonActionPerformed
+
+    private void UnitTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UnitTextFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_UnitTextFieldActionPerformed
+
+    private void TargetNumTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TargetNumTextFieldActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_TargetNumTextFieldActionPerformed
 
     /**
      * @param args the command line arguments
@@ -225,21 +557,28 @@ public class MeasurableJFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton ClockButton;
-    private javax.swing.JTextField ClockTextField;
+    private javax.swing.JComboBox<String> AMPMCombo;
+    private javax.swing.JButton ClockButton1;
+    private javax.swing.JTextField ClockTextFieldHH;
+    private javax.swing.JTextField ClockTextFieldMM;
+    private javax.swing.JComboBox<String> FreqButton;
     private javax.swing.JLabel FrequencyLabel;
-    private javax.swing.JTextField FrequencyTextField;
     private javax.swing.JLabel NameLabel;
     private javax.swing.JTextField NameTextField;
     private javax.swing.JLabel QuestionLabel;
     private javax.swing.JTextField QuestionTextField;
     private javax.swing.JLabel ReminderLabel;
+    private javax.swing.JLabel ReminderLabel1;
+    private javax.swing.JTextField TargetNumTextField;
+    private javax.swing.JComboBox<String> ThresholdComboBox;
     private javax.swing.JLabel UnitLabel;
+    private javax.swing.JLabel UnitLabel1;
     private javax.swing.JTextField UnitTextField;
+    private javax.swing.JPanel daysPanel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea notesArea;
     private javax.swing.JButton saveButton;
     // End of variables declaration//GEN-END:variables
 }

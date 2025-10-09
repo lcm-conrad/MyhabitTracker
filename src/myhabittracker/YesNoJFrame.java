@@ -4,8 +4,11 @@
  */
 package myhabittracker;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.HashSet;
 import java.util.Set;
 import javax.swing.JCheckBox;
@@ -20,14 +23,22 @@ public class YesNoJFrame extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(YesNoJFrame.class.getName());
     private final DashboardHabit dashboard;
     JCheckBox monCheck, tueCheck, wedCheck, thuCheck, friCheck, satCheck, sunCheck;
+    // Placeholder text and color
+    private final String NAME_PLACEHOLDER = "e.g. Study";
+    private final String QUESTION_PLACEHOLDER = "e.g. Did you study today?";
+    private final String CLOCK_HH_PLACEHOLDER = "00";
+    private final String CLOCK_MM_PLACEHOLDER = "00";
+    private final String NOTES_PLACEHOLDER = "";
+    private final Color PLACEHOLDER_COLOR = new Color(204, 204, 204);
+    private final Color TEXT_COLOR = Color.BLACK;
 
     public YesNoJFrame(DashboardHabit dashboard) {
         this.dashboard = dashboard;
         initComponents();
-        
+
         // after initComponents() in YesNoJFrame constructor
-ReminderManager.getInstance().start();
-        
+        ReminderManager.getInstance().start();
+
         setSize(getPreferredSize());   // use the size you set in Designer
         setLocationRelativeTo(null);   // center on screen
         setResizable(true);
@@ -51,6 +62,71 @@ ReminderManager.getInstance().start();
         daysPanel.add(sunCheck);
 // Hide by default
         daysPanel.setVisible(false);
+        // Initialize placeholder behavior
+        setupPlaceholderBehavior();
+    }
+
+    private void setupPlaceholderBehavior() {
+        // NameTextField
+        setupTextFieldPlaceholder(NameTextField, NAME_PLACEHOLDER);
+
+        // QuestionTextField
+        setupTextFieldPlaceholder(QuestionTextField, QUESTION_PLACEHOLDER);
+
+        // ClockTextField (HH)
+        setupTextFieldPlaceholder(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
+
+        // ClockTextField1 (MM)
+        setupTextFieldPlaceholder(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
+
+        // Notes TextArea
+        setupTextAreaPlaceholder(notesArea, NOTES_PLACEHOLDER);
+    }
+
+    private void setupTextFieldPlaceholder(javax.swing.JTextField textField, String placeholder) {
+        textField.setForeground(PLACEHOLDER_COLOR);
+        textField.setText(placeholder);
+
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(TEXT_COLOR);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setForeground(PLACEHOLDER_COLOR);
+                    textField.setText(placeholder);
+                }
+            }
+        });
+    }
+
+    private void setupTextAreaPlaceholder(javax.swing.JTextArea textArea, String placeholder) {
+        textArea.setForeground(PLACEHOLDER_COLOR);
+        textArea.setText(placeholder);
+
+        textArea.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textArea.getText().equals(placeholder)) {
+                    textArea.setText("");
+                    textArea.setForeground(TEXT_COLOR);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textArea.getText().isEmpty()) {
+                    textArea.setForeground(PLACEHOLDER_COLOR);
+                    textArea.setText(placeholder);
+                }
+            }
+        });
     }
 
     /**
@@ -74,12 +150,15 @@ ReminderManager.getInstance().start();
         NameTextField = new javax.swing.JTextField();
         QuestionTextField = new javax.swing.JTextField();
         ClockButton = new javax.swing.JButton();
-        ClockTextField = new javax.swing.JTextField();
+        ClockTextFieldHH = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        notesArea = new javax.swing.JTextArea();
         SaveButton = new javax.swing.JButton();
         FreqButton = new javax.swing.JComboBox<>();
         daysPanel = new javax.swing.JPanel();
+        ClockTextFieldMM = new javax.swing.JTextField();
+        ReminderLabel1 = new javax.swing.JLabel();
+        AMPMCombo = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -93,12 +172,17 @@ ReminderManager.getInstance().start();
 
         jLabel1.setText("Notes:");
 
+        NameTextField.setForeground(new java.awt.Color(204, 204, 204));
+        NameTextField.setHorizontalAlignment(javax.swing.JTextField.LEFT);
+        NameTextField.setText("e.g. Study");
         NameTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 NameTextFieldActionPerformed(evt);
             }
         });
 
+        QuestionTextField.setForeground(new java.awt.Color(204, 204, 204));
+        QuestionTextField.setText("e.g. Did you study today?");
         QuestionTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 QuestionTextFieldActionPerformed(evt);
@@ -112,15 +196,20 @@ ReminderManager.getInstance().start();
             }
         });
 
-        ClockTextField.addActionListener(new java.awt.event.ActionListener() {
+        ClockTextFieldHH.setForeground(new java.awt.Color(204, 204, 204));
+        ClockTextFieldHH.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        ClockTextFieldHH.setText("00");
+        ClockTextFieldHH.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ClockTextFieldActionPerformed(evt);
+                ClockTextFieldHHActionPerformed(evt);
             }
         });
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        notesArea.setColumns(20);
+        notesArea.setForeground(new java.awt.Color(204, 204, 204));
+        notesArea.setRows(5);
+        notesArea.setText("(Optional)");
+        jScrollPane1.setViewportView(notesArea);
 
         SaveButton.setText("Save");
         SaveButton.addActionListener(new java.awt.event.ActionListener() {
@@ -135,6 +224,19 @@ ReminderManager.getInstance().start();
                 FreqButtonActionPerformed(evt);
             }
         });
+
+        ClockTextFieldMM.setForeground(new java.awt.Color(204, 204, 204));
+        ClockTextFieldMM.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        ClockTextFieldMM.setText("00");
+        ClockTextFieldMM.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClockTextFieldMMActionPerformed(evt);
+            }
+        });
+
+        ReminderLabel1.setText(":");
+
+        AMPMCombo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "AM", "PM"}));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -159,8 +261,14 @@ ReminderManager.getInstance().start();
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(ClockButton)
                                 .addComponent(jLabel1))
-                            .addGap(124, 124, 124)
-                            .addComponent(ClockTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(ClockTextFieldHH, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(3, 3, 3)
+                            .addComponent(ReminderLabel1)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(ClockTextFieldMM, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(AMPMCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addComponent(ReminderLabel, javax.swing.GroupLayout.Alignment.LEADING)
                         .addComponent(daysPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(27, Short.MAX_VALUE))
@@ -184,12 +292,13 @@ ReminderManager.getInstance().start();
                 .addComponent(daysPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(2, 2, 2)
                 .addComponent(ReminderLabel)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(1, 1, 1)
-                        .addComponent(ClockTextField))
-                    .addComponent(ClockButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(ClockButton)
+                    .addComponent(ClockTextFieldHH)
+                    .addComponent(ClockTextFieldMM)
+                    .addComponent(ReminderLabel1)
+                    .addComponent(AMPMCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -218,118 +327,170 @@ ReminderManager.getInstance().start();
         // TODO add your handling code here:
     }//GEN-LAST:event_NameTextFieldActionPerformed
 
-    private void ClockTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldActionPerformed
+    private void ClockTextFieldHHActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldHHActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_ClockTextFieldActionPerformed
+    }//GEN-LAST:event_ClockTextFieldHHActionPerformed
 
     private void SaveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveButtonActionPerformed
         // TODO add your handling code here:
-    String habitName = NameTextField.getText().trim();
-    if (habitName.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter a habit name.");
-        return;
-    }
+        String habitName = NameTextField.getText().trim();
+        if (habitName.isEmpty() || habitName.equals(NAME_PLACEHOLDER)) {
+            JOptionPane.showMessageDialog(this, "Please enter a habit name.");
+            return;
+        }
 
-    // dashboard must be a reference to the existing DashboardHabit instance
-    dashboard.addHabitRow(habitName);
+        // dashboard must be a reference to the existing DashboardHabit instance
+        dashboard.addHabitRow(habitName);
 
-    this.dispose();
+        this.dispose();
     }//GEN-LAST:event_SaveButtonActionPerformed
 
     private void QuestionTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_QuestionTextFieldActionPerformed
         // TODO add your handling code here:
         String Question = QuestionTextField.getText().trim();
-        
+
     }//GEN-LAST:event_QuestionTextFieldActionPerformed
 
     private void FreqButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FreqButtonActionPerformed
         // TODO add your handling code here:
-            String selected = (String) FreqButton.getSelectedItem();
-    if ("Weekly".equals(selected)) {
-        daysPanel.setVisible(true);
-    } else {
-        daysPanel.setVisible(false);
-    }
-    revalidate();
-    repaint();
+        String selected = (String) FreqButton.getSelectedItem();
+        if ("Weekly".equals(selected)) {
+            daysPanel.setVisible(true);
+        } else {
+            daysPanel.setVisible(false);
+        }
+        revalidate();
+        repaint();
     }//GEN-LAST:event_FreqButtonActionPerformed
 
     private void ClockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockButtonActionPerformed
         // TODO add your handling code here:
         // inside SaveButtonActionPerformed(...) after you validated/saved the habit
-try {
-    String text = QuestionTextField.getText().trim();
-    if (text.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter habit text.", "Validation", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    // read time from ClockTextField - expect format HH:mm (24-hour) or h:mm a if you prefer
-    String timeStr = ClockTextField.getText().trim(); // e.g. "08:00" or "8:00"
-    java.time.LocalTime time;
-    try {
-        time = java.time.LocalTime.parse(timeStr); // expects "HH:mm" or "HH:mm:ss"
-    } catch (Exception ex) {
-        // try permissive parse for h:mm a
         try {
-            java.time.format.DateTimeFormatter f = java.time.format.DateTimeFormatter.ofPattern("h:mm a");
-            time = java.time.LocalTime.parse(timeStr, f);
-        } catch (Exception ex2) {
-            JOptionPane.showMessageDialog(this, "Please enter time in HH:mm format (e.g. 08:00).", "Invalid time", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-    }
+            String text = QuestionTextField.getText().trim();
+            if (text.isEmpty() || text.equals(QUESTION_PLACEHOLDER)) {
+                JOptionPane.showMessageDialog(this, "Please enter habit text.", "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-    // Determine frequency and days - adapt to how you store frequency in your UI.
-    Reminder rem = new Reminder();
-    rem.setText(text);
-    // Example: if you have a FreqButton radio that sets a variable frequencyValue:
-    // if (frequencyValue.equals("Daily")) ...
-    // For demo, I assume there's a variable or selection component; adapt below:
+            // Get hours, minutes, and AM/PM values
+            String hoursStr = ClockTextFieldHH.getText().trim();
+            String minutesStr = ClockTextFieldMM.getText().trim();
+            String ampm = (String) AMPMCombo.getSelectedItem();
 
-    // --- EXAMPLE ASSUMPTION START ---
-    // Suppose you have a JComboBox<String> FrequencyCombo with "Daily" / "Weekly"
-    String freqSelected = "Daily";
-    try { freqSelected = FreqButton.getSelectedItem().toString(); } catch (Exception ign) {}
-    if ("Weekly".equalsIgnoreCase(freqSelected)) {
-        rem.setFrequency(Reminder.Frequency.WEEKLY);
-        // Suppose you have checkboxes for days inside daysPanel (JCheckBox instances)
-        Set<java.time.DayOfWeek> days = new HashSet<>();
-        for (Component c : daysPanel.getComponents()) {
-            if (c instanceof javax.swing.JCheckBox) {
-                javax.swing.JCheckBox cb = (javax.swing.JCheckBox) c;
-                if (cb.isSelected()) {
-                    // set the mapping by checkbox text, e.g. "Mon" -> DayOfWeek.MONDAY
-                    String txt = cb.getText().toUpperCase();
-                    switch (txt) {
-                        case "MON": case "MONDAY": days.add(java.time.DayOfWeek.MONDAY); break;
-                        case "TUE": case "TUES": case "TUESDAY": days.add(java.time.DayOfWeek.TUESDAY); break;
-                        case "WED": case "WEDNESDAY": days.add(java.time.DayOfWeek.WEDNESDAY); break;
-                        case "THU": case "THURSDAY": days.add(java.time.DayOfWeek.THURSDAY); break;
-                        case "FRI": case "FRIDAY": days.add(java.time.DayOfWeek.FRIDAY); break;
-                        case "SAT": case "SATURDAY": days.add(java.time.DayOfWeek.SATURDAY); break;
-                        case "SUN": case "SUNDAY": days.add(java.time.DayOfWeek.SUNDAY); break;
+            // Check if placeholder values are still present
+            if (hoursStr.equals(CLOCK_HH_PLACEHOLDER) || minutesStr.equals(CLOCK_MM_PLACEHOLDER)) {
+                JOptionPane.showMessageDialog(this, "Please set a valid reminder time.", "Invalid time", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Validate hours (1-12 for 12-hour format)
+            int hours;
+            try {
+                hours = Integer.parseInt(hoursStr);
+                if (hours < 1 || hours > 12) {
+                    JOptionPane.showMessageDialog(this, "Hours must be between 1 and 12.", "Invalid hours", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Please enter valid hours (1-12).", "Invalid hours", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Validate minutes (0-59)
+            int minutes;
+            try {
+                minutes = Integer.parseInt(minutesStr);
+                if (minutes < 0 || minutes > 59) {
+                    JOptionPane.showMessageDialog(this, "Minutes must be between 0 and 59.", "Invalid minutes", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Please enter valid minutes (0-59).", "Invalid minutes", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Convert to 24-hour format
+            if ("PM".equals(ampm) && hours != 12) {
+                hours += 12;
+            } else if ("AM".equals(ampm) && hours == 12) {
+                hours = 0;
+            }
+
+            // Create LocalTime object
+            java.time.LocalTime time = java.time.LocalTime.of(hours, minutes);
+
+            // Determine frequency and days
+            Reminder rem = new Reminder();
+            rem.setText(text);
+
+            String freqSelected = "Daily";
+            try {
+                freqSelected = FreqButton.getSelectedItem().toString();
+            } catch (Exception ign) {
+            }
+
+            if ("Weekly".equalsIgnoreCase(freqSelected)) {
+                rem.setFrequency(Reminder.Frequency.WEEKLY);
+                Set<java.time.DayOfWeek> days = new HashSet<>();
+                for (Component c : daysPanel.getComponents()) {
+                    if (c instanceof javax.swing.JCheckBox) {
+                        javax.swing.JCheckBox cb = (javax.swing.JCheckBox) c;
+                        if (cb.isSelected()) {
+                            String txt = cb.getText().toUpperCase();
+                            switch (txt) {
+                                case "MON":
+                                case "MONDAY":
+                                    days.add(java.time.DayOfWeek.MONDAY);
+                                    break;
+                                case "TUE":
+                                case "TUES":
+                                case "TUESDAY":
+                                    days.add(java.time.DayOfWeek.TUESDAY);
+                                    break;
+                                case "WED":
+                                case "WEDNESDAY":
+                                    days.add(java.time.DayOfWeek.WEDNESDAY);
+                                    break;
+                                case "THU":
+                                case "THURSDAY":
+                                    days.add(java.time.DayOfWeek.THURSDAY);
+                                    break;
+                                case "FRI":
+                                case "FRIDAY":
+                                    days.add(java.time.DayOfWeek.FRIDAY);
+                                    break;
+                                case "SAT":
+                                case "SATURDAY":
+                                    days.add(java.time.DayOfWeek.SATURDAY);
+                                    break;
+                                case "SUN":
+                                case "SUNDAY":
+                                    days.add(java.time.DayOfWeek.SUNDAY);
+                                    break;
+                            }
+                        }
                     }
                 }
+                rem.setDaysOfWeek(days);
+            } else {
+                rem.setFrequency(Reminder.Frequency.DAILY);
             }
+
+            rem.setTime(time);
+
+            // register
+            ReminderManager.getInstance().addReminder(rem);
+            JOptionPane.showMessageDialog(this, "Reminder saved for " + time.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a")) + ".", "Saved", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to create reminder: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-        rem.setDaysOfWeek(days);
-    } else {
-        rem.setFrequency(Reminder.Frequency.DAILY);
-    }
-    // --- EXAMPLE ASSUMPTION END ---
-
-    rem.setTime(time);
-
-    // register
-    ReminderManager.getInstance().addReminder(rem);
-    JOptionPane.showMessageDialog(this, "Reminder saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
-} catch (Exception ex) {
-    ex.printStackTrace();
-    JOptionPane.showMessageDialog(this, "Failed to create reminder: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-}
-
     }//GEN-LAST:event_ClockButtonActionPerformed
+
+    private void ClockTextFieldMMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldMMActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ClockTextFieldMMActionPerformed
 
     /**
      * @param args the command line arguments
@@ -357,8 +518,10 @@ try {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JComboBox<String> AMPMCombo;
     private javax.swing.JButton ClockButton;
-    private javax.swing.JTextField ClockTextField;
+    private javax.swing.JTextField ClockTextFieldHH;
+    private javax.swing.JTextField ClockTextFieldMM;
     private javax.swing.JComboBox<String> FreqButton;
     private javax.swing.JLabel FrequencyLabel;
     private javax.swing.JLabel NameLabel;
@@ -366,11 +529,12 @@ try {
     private javax.swing.JLabel QuestionLabel;
     private javax.swing.JTextField QuestionTextField;
     private javax.swing.JLabel ReminderLabel;
+    private javax.swing.JLabel ReminderLabel1;
     private javax.swing.JButton SaveButton;
     private javax.swing.JPanel daysPanel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea notesArea;
     // End of variables declaration//GEN-END:variables
 }

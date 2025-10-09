@@ -8,16 +8,21 @@ import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.EventObject;
 import java.util.prefs.Preferences;
+import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -30,6 +35,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     // class-level fields (near top of class)
     private DefaultTableModel model;
     private ImageIcon xIcon, checkIcon, doneIcon;
+    private final Set<String> measurableHabits = new HashSet<>();
 
     // State constants
     private static final int STATE_X = 0;
@@ -87,21 +93,47 @@ public class DashboardHabit extends javax.swing.JFrame {
             columnNames[i + 1] = today.minusDays(i).format(formatter);
         }
         // ✅ Model uses Integer for icon states
-        model = new DefaultTableModel(new Object[][]{}, columnNames) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 0 ? String.class : Integer.class;
+model = new DefaultTableModel(new Object[][]{}, columnNames) {
+    @Override
+    public Class<?> getColumnClass(int columnIndex) {
+        if (columnIndex == 0) {
+            return String.class;
+        }
+        for (int row = 0; row < getRowCount(); row++) {
+            Object val = getValueAt(row, columnIndex);
+            if (val instanceof Integer) {
+                return Integer.class;
             }
+            if (val instanceof String) {
+                return String.class;
+            }
+        }
+        return Object.class;
+    }
 
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; // Disable editing for all cells to avoid text editor
-            }
-        };
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        if (column == 0) return false;
+        String habitName = (String) getValueAt(row, 0);
+        return DashboardHabit.this.isMeasurableHabit(habitName);
+    }
+}; // ✅ Properly closes the anonymous class
 
 // ✅ Use the NetBeans table
         jTable1.setModel(model);
         jTable1.setRowHeight(40);
+// inside constructor, after jTable1.setModel(model);
+        jTable1.setDefaultEditor(Object.class, new DefaultCellEditor(new JTextField()) {
+            @Override
+            public boolean isCellEditable(EventObject e) {
+                if (jTable1.getSelectedRow() < 0) {
+                    return false;
+                }
+                int row = jTable1.getSelectedRow();
+                String habitName = jTable1.getValueAt(row, 0).toString();
+                return isMeasurableHabit(habitName);
+            }
+        });
 
         // ✅ Tell JTable how to draw Integer cells
         jTable1.setDefaultRenderer(Integer.class, new DefaultTableCellRenderer() {
@@ -112,24 +144,18 @@ public class DashboardHabit extends javax.swing.JFrame {
 
                 JLabel label = (JLabel) super.getTableCellRendererComponent(
                         table, value, isSelected, hasFocus, row, column);
-
-                label.setText(""); // clear text
+                label.setText("");
                 label.setHorizontalAlignment(SwingConstants.CENTER);
 
                 int state = (value instanceof Integer) ? (Integer) value : STATE_X;
-
                 switch (state) {
-                    case STATE_CHECK:
+                    case STATE_CHECK ->
                         label.setIcon(checkIcon);
-                        break;
-                    case STATE_DONE:
+                    case STATE_DONE ->
                         label.setIcon(doneIcon);
-                        break;
-                    default:
+                    default ->
                         label.setIcon(xIcon);
-                        break;
                 }
-
                 return label;
             }
         });
@@ -138,21 +164,67 @@ public class DashboardHabit extends javax.swing.JFrame {
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-          int row = jTable1.rowAtPoint(e.getPoint());
-          int col = jTable1.columnAtPoint(e.getPoint());
-          if (row >= 0 && col > 0) {  // Only day columns (col > 0)
-              Object val = model.getValueAt(row, col);
-              int state = (val instanceof Integer) ? (Integer) val : STATE_X;
-              
-              // Binary toggle: Only between X (0) and Check (1); ignore/force-reset Done (2)
-              int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
-              
-              model.setValueAt(nextState, row, col);
-              
-          }
-            }
+        int row = jTable1.rowAtPoint(e.getPoint());
+        int col = jTable1.columnAtPoint(e.getPoint());
+        if (row < 0 || col < 1) return; // skip header or invalid clicks
+
+        String habitName = jTable1.getValueAt(row, 0).toString();
+        if (!isMeasurableHabit(habitName)) {
+            Object val = model.getValueAt(row, col);
+            int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+            int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+            model.setValueAt(nextState, row, col);
+        }
+    }
         });
         setVisible(true);
+    }
+
+public void addMeasurableHabit(String habitName, String valueWithUnit) {
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+
+    // Find if habit already exists
+    int habitRow = -1;
+    for (int i = 0; i < model.getRowCount(); i++) {
+        if (model.getValueAt(i, 0).equals(habitName)) {
+            habitRow = i;
+            break;
+        }
+    }
+
+    if (habitRow == -1) {
+        // Add new habit row with empty values
+        Object[] newRow = new Object[model.getColumnCount()];
+        newRow[0] = habitName;
+        model.addRow(newRow);
+        habitRow = model.getRowCount() - 1;
+    }
+
+    // Determine which date column to fill (today’s date)
+    LocalDate today = LocalDate.now();
+    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd");
+    String todayCol = fmt.format(today);
+
+    int colIndex = -1;
+    for (int c = 1; c < model.getColumnCount(); c++) {
+        if (model.getColumnName(c).equals(todayCol)) {
+            colIndex = c;
+            break;
+        }
+    }
+
+    // If today's column doesn't exist, optionally handle
+    if (colIndex == -1) {
+        JOptionPane.showMessageDialog(null, "Today's column not found!");
+        return;
+    }
+
+    // Update cell
+    model.setValueAt(valueWithUnit, habitRow, colIndex);
+}
+
+    private boolean isMeasurableHabit(String habitName) {
+        return measurableHabits.contains(habitName);
     }
 
     // When a habit is added, we’ll call this later
@@ -162,8 +234,15 @@ public class DashboardHabit extends javax.swing.JFrame {
     public void addHabitRow(String habitName) {
         Object[] row = new Object[7];
         row[0] = habitName;
-        for (int i = 1; i < 7; i++) {
-            row[i] = STATE_X;
+
+        if (isMeasurableHabit(habitName)) {
+            for (int i = 1; i < 7; i++) {
+                row[i] = "0.0 unit";
+            }
+        } else {
+            for (int i = 1; i < 7; i++) {
+                row[i] = STATE_X;
+            }
         }
         model.addRow(row);
     }
@@ -178,6 +257,8 @@ public class DashboardHabit extends javax.swing.JFrame {
     private void initComponents() {
 
         jCheckBoxMenuItem1 = new javax.swing.JCheckBoxMenuItem();
+        jMenu1 = new javax.swing.JMenu();
+        jMenu2 = new javax.swing.JMenu();
         addHabit = new javax.swing.JButton();
         LockButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -186,6 +267,10 @@ public class DashboardHabit extends javax.swing.JFrame {
 
         jCheckBoxMenuItem1.setSelected(true);
         jCheckBoxMenuItem1.setText("jCheckBoxMenuItem1");
+
+        jMenu1.setText("jMenu1");
+
+        jMenu2.setText("jMenu2");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -221,10 +306,10 @@ public class DashboardHabit extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 621, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                    .addComponent(jScrollPane2)
+                    .addGroup(layout.createSequentialGroup()
                         .addComponent(addHabit)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 379, Short.MAX_VALUE)
                         .addComponent(LockButton)
                         .addGap(18, 18, 18)
                         .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -232,15 +317,15 @@ public class DashboardHabit extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(29, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(24, 24, 24)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(addHabit)
                     .addComponent(LockButton)
                     .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(35, 35, 35)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -331,6 +416,8 @@ public class DashboardHabit extends javax.swing.JFrame {
     private javax.swing.JButton addHabit;
     private javax.swing.JComboBox<String> fileMenu;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables
