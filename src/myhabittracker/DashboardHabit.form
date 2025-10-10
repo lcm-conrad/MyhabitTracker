@@ -55,9 +55,15 @@
                   <Component id="jScrollPane2" max="32767" attributes="0"/>
                   <Group type="102" attributes="0">
                       <Component id="addHabit" min="-2" max="-2" attributes="0"/>
+<<<<<<< HEAD
+                      <EmptySpace max="32767" attributes="0"/>
+                      <Component id="jButtonSetupPin" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+=======
                       <EmptySpace pref="379" max="32767" attributes="0"/>
                       <Component id="LockButton" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
+>>>>>>> e90560711233dd2e249a773ee86b4157cf974e5d
                       <Component id="fileMenu" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -71,8 +77,8 @@
               <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="addHabit" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="LockButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="fileMenu" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jButtonSetupPin" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
               <Component id="jScrollPane2" min="-2" pref="241" max="-2" attributes="0"/>
@@ -88,14 +94,6 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addHabitActionPerformed"/>
-      </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="LockButton">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Lock"/>
-      </Properties>
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="LockButtonActionPerformed"/>
       </Events>
     </Component>
     <Container class="javax.swing.JScrollPane" name="jScrollPane2">
@@ -135,6 +133,14 @@
       <AuxValues>
         <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
       </AuxValues>
+    </Component>
+    <Component class="javax.swing.JButton" name="jButtonSetupPin">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Set pin"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonSetupPinActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>
