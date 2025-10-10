@@ -17,7 +17,6 @@ import javax.swing.JOptionPane;
 public class DashboardHabit extends javax.swing.JFrame {
 
     private addHabit habitWindow;
-    private PinPasswordHabit PinWindow;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DashboardHabit.class.getName());
 
     /**
@@ -29,7 +28,16 @@ public class DashboardHabit extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         Preferences prefs = Preferences.userNodeForPackage(this.getClass());
         setTitle("MyHabitsTracker");
+        String savedPin = prefs.get("userPIN", null);
+        if (savedPin == null) {
+            jButtonSetupPin.setText("Set PIN");
+        } else {
+            jButtonSetupPin.setText("Reset PIN");
+        }
         //icon sa myHabitsTracker
+        // If no PIN exists, show setup button
+        jButtonSetupPin.setVisible(true);
+
         // Restore last position and size if available
         int x = prefs.getInt("windowX", -1);
         int y = prefs.getInt("windowY", -1);
@@ -55,31 +63,22 @@ public class DashboardHabit extends javax.swing.JFrame {
         });
         // Formatter for nice column header labels
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-
-        // Build column names: Habit + today + past 5 days
         String[] columnNames = new String[7];
         columnNames[0] = "Habit";
-
         LocalDate today = LocalDate.now();
         for (int i = 0; i < 6; i++) {
             columnNames[i + 1] = today.minusDays(i).format(formatter);
         }
 
         // Set custom model with Boolean checkboxes
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
-                new Object[][]{},
-                columnNames
+         jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object[][]{}, columnNames
         ) {
             Class[] types = new Class[]{
-                java.lang.String.class, // Habit column
-                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class,
-                java.lang.Boolean.class, java.lang.Boolean.class, java.lang.Boolean.class
+                String.class, Boolean.class, Boolean.class, Boolean.class,
+                Boolean.class, Boolean.class, Boolean.class
             };
-
-            @Override
-            public Class getColumnClass(int columnIndex) {
-                return types[columnIndex];
-            }
+            public Class getColumnClass(int col) { return types[col]; }
         });
     }
 
@@ -97,10 +96,10 @@ public javax.swing.JTable getTable() {
 
         jCheckBoxMenuItem1 = new javax.swing.JCheckBoxMenuItem();
         addHabit = new javax.swing.JButton();
-        LockButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         fileMenu = new javax.swing.JComboBox<>();
+        jButtonSetupPin = new javax.swing.JButton();
 
         jCheckBoxMenuItem1.setSelected(true);
         jCheckBoxMenuItem1.setText("jCheckBoxMenuItem1");
@@ -114,13 +113,6 @@ public javax.swing.JTable getTable() {
             }
         });
 
-        LockButton.setText("Lock");
-        LockButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LockButtonActionPerformed(evt);
-            }
-        });
-
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
@@ -128,6 +120,13 @@ public javax.swing.JTable getTable() {
         fileMenu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 fileMenuActionPerformed(evt);
+            }
+        });
+
+        jButtonSetupPin.setText("Set pin");
+        jButtonSetupPin.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSetupPinActionPerformed(evt);
             }
         });
 
@@ -142,8 +141,8 @@ public javax.swing.JTable getTable() {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(addHabit)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(LockButton)
-                        .addGap(18, 18, 18)
+                        .addComponent(jButtonSetupPin)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
@@ -153,8 +152,8 @@ public javax.swing.JTable getTable() {
                 .addContainerGap(29, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(addHabit)
-                    .addComponent(LockButton)
-                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonSetupPin))
                 .addGap(35, 35, 35)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -165,26 +164,16 @@ public javax.swing.JTable getTable() {
 
     private void addHabitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addHabitActionPerformed
         // TODO add your handling code here:
-    if (habitWindow == null || !habitWindow.isShowing()) {
-        habitWindow = new addHabit(this); // ✅ pass the current DashboardHabit
-        habitWindow.setVisible(true);
+    String savedPin = PinPasswordHabit.getSavedPin();
+    if (savedPin == null) {
+        // No PIN yet → force setup
+        new PinPasswordHabit("SETUP", this).setVisible(true);
     } else {
-        habitWindow.toFront();
-        habitWindow.requestFocus();
+        // PIN exists → require unlock first
+        new PinPasswordHabit("UNLOCK", this).setVisible(true);
     }
+    this.setVisible(false); // hide dashboard until PIN check is done
     }//GEN-LAST:event_addHabitActionPerformed
-
-    private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
-        // TODO add your handling code here:
-        // Open the PinPasswordHabit window
-        if (PinWindow == null || !PinWindow.isShowing()) {
-            PinWindow = new PinPasswordHabit();
-            PinWindow.setVisible(true);
-        } else {
-            PinWindow.toFront();
-            PinWindow.requestFocus();
-        }
-    }//GEN-LAST:event_LockButtonActionPerformed
 
     private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed
         // TODO add your handling code here:
@@ -203,6 +192,35 @@ public javax.swing.JTable getTable() {
             }
         }
     }//GEN-LAST:event_fileMenuActionPerformed
+
+    private void jButtonSetupPinActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSetupPinActionPerformed
+        // TODO add your handling code here:
+         int confirm = JOptionPane.showConfirmDialog(
+        this,
+        "Do you want to reset your PIN and security questions?",
+        "Reset Confirmation",
+        JOptionPane.YES_NO_OPTION
+    );
+
+    if (confirm == JOptionPane.YES_OPTION) {
+        Preferences prefs = Preferences.userNodeForPackage(PinPasswordHabit.class);
+        // remove PIN and the exact keys used by SecurityQuestionSetup
+        prefs.remove("userPIN");
+        prefs.remove("secQuestion");
+        prefs.remove("secAnswer");
+
+        JOptionPane.showMessageDialog(this,
+            "Old PIN and security questions cleared. Let's set up your security questions first.");
+
+        // Open the SecurityQuestionSetup window.
+        // The SecurityQuestionSetup class already launches the PIN setup
+        // after the user saves/verifies the security question.
+        new SecurityQuestionSetup(null, this).setVisible(true);
+
+        // hide dashboard while user sets up security Q + PIN
+        this.setVisible(false);
+    }
+    }//GEN-LAST:event_jButtonSetupPinActionPerformed
     private void exportHabits() {
         JOptionPane.showMessageDialog(this, "Exporting habits...");
         // TODO: write table data to CSV/Excel
@@ -231,13 +249,34 @@ public javax.swing.JTable getTable() {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new DashboardHabit().setVisible(true));
+         try {
+        FlatLightLaf.setup();
+    } catch (Exception ex) {
+        logger.log(java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
     }
 
+    java.awt.EventQueue.invokeLater(() -> {
+        DashboardHabit dash = new DashboardHabit();
+        Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
+        String savedPin = prefs.get("userPIN", null);
+
+        if (savedPin == null) {
+            // First-time setup
+            new PinPasswordHabit("SETUP", dash).setVisible(true);
+        } else {
+            // Require unlock
+            new PinPasswordHabit("UNLOCK", dash).setVisible(true);
+        }
+        dash.setVisible(false);
+    });
+    }
+
+    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton LockButton;
     private javax.swing.JButton addHabit;
     private javax.swing.JComboBox<String> fileMenu;
+    private javax.swing.JButton jButtonSetupPin;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
