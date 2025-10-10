@@ -5,24 +5,27 @@
 package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import java.awt.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.EventObject;
+import java.util.HashMap;
 import java.util.prefs.Preferences;
 import javax.swing.DefaultCellEditor;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.logging.Level;
 
 /**
  *
@@ -36,6 +39,9 @@ public class DashboardHabit extends javax.swing.JFrame {
     private DefaultTableModel model;
     private ImageIcon xIcon, checkIcon, doneIcon;
     private final Set<String> measurableHabits = new HashSet<>();
+    private final Map<String, String> habitUnits = new HashMap<>(); // NEW: Store units
+    private final Map<String, Double> habitTargets = new HashMap<>();
+    private final Map<String, String> habitThresholds = new HashMap<>(); // "At least" or "At most"
 
     // State constants
     private static final int STATE_X = 0;
@@ -93,36 +99,79 @@ public class DashboardHabit extends javax.swing.JFrame {
             columnNames[i + 1] = today.minusDays(i).format(formatter);
         }
         // ✅ Model uses Integer for icon states
-model = new DefaultTableModel(new Object[][]{}, columnNames) {
-    @Override
-    public Class<?> getColumnClass(int columnIndex) {
-        if (columnIndex == 0) {
-            return String.class;
-        }
-        for (int row = 0; row < getRowCount(); row++) {
-            Object val = getValueAt(row, columnIndex);
-            if (val instanceof Integer) {
-                return Integer.class;
+        model = new DefaultTableModel(new Object[][]{}, columnNames) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return Object.class; // Let renderer handle all types
             }
-            if (val instanceof String) {
-                return String.class;
-            }
-        }
-        return Object.class;
-    }
 
-    @Override
-    public boolean isCellEditable(int row, int column) {
-        if (column == 0) return false;
-        String habitName = (String) getValueAt(row, 0);
-        return DashboardHabit.this.isMeasurableHabit(habitName);
-    }
-}; // ✅ Properly closes the anonymous class
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                if (column == 0) {
+                    return false;
+                }
+                String habitName = (String) getValueAt(row, 0);
+                return DashboardHabit.this.isMeasurableHabit(habitName);
+            }
+
+        }; // ✅ Properly closes the anonymous class
+
+// Load saved habits
+        loadHabitsFromExcel();
 
 // ✅ Use the NetBeans table
         jTable1.setModel(model);
         jTable1.setRowHeight(40);
-// inside constructor, after jTable1.setModel(model);
+
+        // Add this after setting up the table model
+        model.addTableModelListener(e -> {
+            // Save whenever table data changes
+            saveHabitsToExcel();
+        });
+
+        //custom renderer to allow yes/no and measurable habits to coincide the table
+        jTable1.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(
+            javax.swing.JTable table, Object value, boolean isSelected,
+            boolean hasFocus, int row, int column) {
+
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(
+                table, value, isSelected, hasFocus, row, column);
+
+        label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+
+        // Check what type of value this cell contains
+        if (value instanceof Integer) {
+            // Render as icon for yes/no habits
+            label.setText("");
+            int state = (Integer) value;
+            switch (state) {
+                case STATE_CHECK:
+                    label.setIcon(checkIcon);
+                    break;
+                case STATE_DONE:
+                    label.setIcon(doneIcon);
+                    break;
+                default:
+                    label.setIcon(xIcon);
+                    break;
+            }
+        } else if (value instanceof String) {
+            // Render as text for measurable habits
+            label.setIcon(null);
+            label.setText((String) value);
+        } else {
+            // Empty or null
+            label.setIcon(null);
+            label.setText("");
+        }
+
+        return label;
+    }
+});
+        
+// Custom editor for measurable habits
         jTable1.setDefaultEditor(Object.class, new DefaultCellEditor(new JTextField()) {
             @Override
             public boolean isCellEditable(EventObject e) {
@@ -133,30 +182,51 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
                 String habitName = jTable1.getValueAt(row, 0).toString();
                 return isMeasurableHabit(habitName);
             }
-        });
 
-        // ✅ Tell JTable how to draw Integer cells
-        jTable1.setDefaultRenderer(Integer.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(
-                    JTable table, Object value, boolean isSelected,
-                    boolean hasFocus, int row, int column) {
+            public boolean stopCellEditing() {
+                // Get the current editing value
+                String value = (String) getCellEditorValue();
 
-                JLabel label = (JLabel) super.getTableCellRendererComponent(
-                        table, value, isSelected, hasFocus, row, column);
-                label.setText("");
-                label.setHorizontalAlignment(SwingConstants.CENTER);
+                // Get the habit name and unit
+                int row = jTable1.getEditingRow();
+                if (row >= 0) {
+                    String habitName = (String) jTable1.getValueAt(row, 0);
+                    String unit = getHabitUnit(habitName);
 
-                int state = (value instanceof Integer) ? (Integer) value : STATE_X;
-                switch (state) {
-                    case STATE_CHECK ->
-                        label.setIcon(checkIcon);
-                    case STATE_DONE ->
-                        label.setIcon(doneIcon);
-                    default ->
-                        label.setIcon(xIcon);
+                    if (unit != null && !unit.isEmpty()) {
+                        // Clean the input - remove any existing unit
+                        String cleanValue = value.trim();
+
+                        // Remove the unit if user typed it
+                        if (cleanValue.endsWith(unit)) {
+                            cleanValue = cleanValue.substring(0, cleanValue.length() - unit.length()).trim();
+                        }
+
+                        // Parse the number
+                        double numValue = 0.0;
+                        if (!cleanValue.isEmpty()) {
+                            try {
+                                numValue = Double.parseDouble(cleanValue);
+                            } catch (NumberFormatException e) {
+                                // Invalid number - show error and keep editing
+                                JOptionPane.showMessageDialog(jTable1,
+                                        "Please enter a valid number.",
+                                        "Invalid Input",
+                                        JOptionPane.ERROR_MESSAGE);
+                                return false; // Don't stop editing
+                            }
+                        }
+
+                        // Format with unit
+                        String formattedValue = numValue + " " + unit;
+
+                        // Update the cell editor value
+                        ((JTextField) getComponent()).setText(formattedValue);
+                    }
                 }
-                return label;
+
+                return super.stopCellEditing();
             }
         });
 
@@ -164,64 +234,67 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-        int row = jTable1.rowAtPoint(e.getPoint());
-        int col = jTable1.columnAtPoint(e.getPoint());
-        if (row < 0 || col < 1) return; // skip header or invalid clicks
-
-        String habitName = jTable1.getValueAt(row, 0).toString();
-        if (!isMeasurableHabit(habitName)) {
-            Object val = model.getValueAt(row, col);
-            int state = (val instanceof Integer) ? (Integer) val : STATE_X;
-            int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
-            model.setValueAt(nextState, row, col);
-        }
-    }
+                int row = jTable1.rowAtPoint(e.getPoint());
+                int col = jTable1.columnAtPoint(e.getPoint());
+                if (row < 0 || col < 1) {
+                    return; // skip header or invalid clicks
+                }
+                String habitName = jTable1.getValueAt(row, 0).toString();
+                if (!isMeasurableHabit(habitName)) {
+                    Object val = model.getValueAt(row, col);
+                    int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+                    int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+                    model.setValueAt(nextState, row, col);
+                }
+            }
         });
         setVisible(true);
     }
 
-public void addMeasurableHabit(String habitName, String valueWithUnit) {
-    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    public void addMeasurableHabit(String habitName, String valueWithUnit) {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
 
-    // Find if habit already exists
-    int habitRow = -1;
-    for (int i = 0; i < model.getRowCount(); i++) {
-        if (model.getValueAt(i, 0).equals(habitName)) {
-            habitRow = i;
-            break;
+        // Find if habit already exists
+        int habitRow = -1;
+        for (int i = 0; i < model.getRowCount(); i++) {
+            if (model.getValueAt(i, 0).equals(habitName)) {
+                habitRow = i;
+                break;
+            }
         }
-    }
 
-    if (habitRow == -1) {
-        // Add new habit row with empty values
-        Object[] newRow = new Object[model.getColumnCount()];
-        newRow[0] = habitName;
-        model.addRow(newRow);
-        habitRow = model.getRowCount() - 1;
-    }
-
-    // Determine which date column to fill (today’s date)
-    LocalDate today = LocalDate.now();
-    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd");
-    String todayCol = fmt.format(today);
-
-    int colIndex = -1;
-    for (int c = 1; c < model.getColumnCount(); c++) {
-        if (model.getColumnName(c).equals(todayCol)) {
-            colIndex = c;
-            break;
+        if (habitRow == -1) {
+            // Habit doesn't exist yet - shouldn't happen if addHabitRow was called first
+            JOptionPane.showMessageDialog(null, "Habit not found: " + habitName);
+            return;
         }
+
+        // Determine which date column to fill (today's date)
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd");
+        String todayCol = fmt.format(today);
+
+        int colIndex = -1;
+        for (int c = 1; c < model.getColumnCount(); c++) {
+            if (model.getColumnName(c).equals(todayCol)) {
+                colIndex = c;
+                break;
+            }
+        }
+
+        // If today's column doesn't exist, optionally handle
+        if (colIndex == -1) {
+            JOptionPane.showMessageDialog(null, "Today's column not found!");
+            return;
+        }
+
+        // Update cell with the actual value
+        model.setValueAt(valueWithUnit, habitRow, colIndex);
     }
 
-    // If today's column doesn't exist, optionally handle
-    if (colIndex == -1) {
-        JOptionPane.showMessageDialog(null, "Today's column not found!");
-        return;
+    public String getHabitUnit(String habitName) {
+        return habitUnits.getOrDefault(habitName, "");
     }
-
-    // Update cell
-    model.setValueAt(valueWithUnit, habitRow, colIndex);
-}
 
     private boolean isMeasurableHabit(String habitName) {
         return measurableHabits.contains(habitName);
@@ -231,20 +304,253 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
     // to populate its default icons
     // Example usage:
     // addHabitRow("Drink Water", model, xIcon);
-    public void addHabitRow(String habitName) {
+    public void addHabitRow(String habitName, String unit) {
         Object[] row = new Object[7];
         row[0] = habitName;
 
-        if (isMeasurableHabit(habitName)) {
+        if (unit != null && !unit.trim().isEmpty()) {
+            // This is a measurable habit
+            measurableHabits.add(habitName);
+            habitUnits.put(habitName, unit);
+
+            // Fill with "0 unit" format
             for (int i = 1; i < 7; i++) {
-                row[i] = "0.0 unit";
+                row[i] = "0 " + unit;
             }
         } else {
+            // This is a yes/no habit
             for (int i = 1; i < 7; i++) {
                 row[i] = STATE_X;
             }
         }
         model.addRow(row);
+
+        // ✅ Save after adding
+        saveHabitsToExcel();
+    }
+
+    public void addHabitRow(String habitName, String unit, double target, String threshold) {
+        // Store metadata
+        habitTargets.put(habitName, target);
+        habitThresholds.put(habitName, threshold);
+
+        // Call the existing method
+        addHabitRow(habitName, unit);
+
+    }
+
+    private void saveHabitsToExcel() {
+        try {
+            Workbook workbook = new XSSFWorkbook();
+
+            // Sheet 1: Habit Metadata
+            Sheet metadataSheet = workbook.createSheet("HabitMetadata");
+            Row headerRow = metadataSheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Habit Name");
+            headerRow.createCell(1).setCellValue("Type");
+            headerRow.createCell(2).setCellValue("Unit");
+            headerRow.createCell(3).setCellValue("Target");
+            headerRow.createCell(4).setCellValue("Threshold");
+
+            int rowNum = 1;
+            for (int i = 0; i < model.getRowCount(); i++) {
+                String habitName = (String) model.getValueAt(i, 0);
+                Row row = metadataSheet.createRow(rowNum++);
+
+                row.createCell(0).setCellValue(habitName);
+
+                if (isMeasurableHabit(habitName)) {
+                    row.createCell(1).setCellValue("Measurable");
+                    row.createCell(2).setCellValue(getHabitUnit(habitName));
+
+                    Double target = habitTargets.get(habitName);
+                    if (target != null) {
+                        row.createCell(3).setCellValue(target);
+                    }
+
+                    String threshold = habitThresholds.get(habitName);
+                    if (threshold != null) {
+                        row.createCell(4).setCellValue(threshold);
+                    }
+                } else {
+                    row.createCell(1).setCellValue("YesNo");
+                    row.createCell(2).setCellValue("");
+                    row.createCell(3).setCellValue("");
+                    row.createCell(4).setCellValue("");
+                }
+            }
+
+            // Sheet 2: Habit Data (the table content)
+            Sheet dataSheet = workbook.createSheet("HabitData");
+
+            // Write column headers
+            Row dataHeaderRow = dataSheet.createRow(0);
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                dataHeaderRow.createCell(col).setCellValue(model.getColumnName(col));
+            }
+
+            // Write data rows
+            for (int row = 0; row < model.getRowCount(); row++) {
+                Row dataRow = dataSheet.createRow(row + 1);
+                for (int col = 0; col < model.getColumnCount(); col++) {
+                    Object value = model.getValueAt(row, col);
+                    Cell cell = dataRow.createCell(col);
+
+                    if (value instanceof String) {
+                        cell.setCellValue((String) value);
+                    } else if (value instanceof Integer) {
+                        cell.setCellValue((Integer) value);
+                    } else if (value != null) {
+                        cell.setCellValue(value.toString());
+                    }
+                }
+            }
+
+            // Auto-size columns
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                metadataSheet.autoSizeColumn(col);
+                dataSheet.autoSizeColumn(col);
+            }
+
+            // Save to file
+            String userHome = System.getProperty("user.home");
+            String filePath = userHome + File.separator + "MyHabitTracker_Data.xlsx";
+
+            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
+
+            workbook.close();
+            logger.log(Level.INFO, "Habits saved to: {0}", filePath);
+
+        } catch (IOException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error saving habits to Excel", e);
+            JOptionPane.showMessageDialog(this,
+                    "Failed to save habits: " + e.getMessage(),
+                    "Save Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadHabitsFromExcel() {
+        try {
+            String userHome = System.getProperty("user.home");
+            String filePath = userHome + File.separator + "MyHabitTracker_Data.xlsx";
+
+            File file = new File(filePath);
+            if (!file.exists()) {
+                logger.info("No saved habits file found. Starting fresh.");
+                return;
+            }
+
+            try (FileInputStream fileIn = new FileInputStream(file); Workbook workbook = new XSSFWorkbook(fileIn)) {
+
+                // Load metadata first
+                Sheet metadataSheet = workbook.getSheet("HabitMetadata");
+                if (metadataSheet != null) {
+                    for (int i = 1; i <= metadataSheet.getLastRowNum(); i++) {
+                        Row row = metadataSheet.getRow(i);
+                        if (row == null) {
+                            continue;
+                        }
+
+                        String habitName = getCellValueAsString(row.getCell(0));
+                        String type = getCellValueAsString(row.getCell(1));
+                        String unit = getCellValueAsString(row.getCell(2));
+
+                        if ("Measurable".equals(type)) {
+                            measurableHabits.add(habitName);
+                            if (!unit.isEmpty()) {
+                                habitUnits.put(habitName, unit);
+                            }
+
+                            // Load target and threshold
+                            Cell targetCell = row.getCell(3);
+                            if (targetCell != null && targetCell.getCellType() == CellType.NUMERIC) {
+                                habitTargets.put(habitName, targetCell.getNumericCellValue());
+                            }
+
+                            String threshold = getCellValueAsString(row.getCell(4));
+                            if (!threshold.isEmpty()) {
+                                habitThresholds.put(habitName, threshold);
+                            }
+                        }
+                    }
+                }
+
+                // Load table data
+                Sheet dataSheet = workbook.getSheet("HabitData");
+                if (dataSheet != null) {
+                    // Clear existing data
+                    model.setRowCount(0);
+
+                    // Skip header row, start from row 1
+                    for (int rowIdx = 1; rowIdx <= dataSheet.getLastRowNum(); rowIdx++) {
+                        Row excelRow = dataSheet.getRow(rowIdx);
+                        if (excelRow == null) {
+                            continue;
+                        }
+
+                        Object[] tableRow = new Object[model.getColumnCount()];
+
+                        for (int colIdx = 0; colIdx < model.getColumnCount(); colIdx++) {
+                            Cell cell = excelRow.getCell(colIdx);
+
+                            if (colIdx == 0) {
+                                // Habit name (always string)
+                                tableRow[colIdx] = getCellValueAsString(cell);
+                            } else {
+                                // Data columns
+                                String habitName = (String) tableRow[0];
+
+                                if (isMeasurableHabit(habitName)) {
+                                    // Measurable habit - store as string
+                                    tableRow[colIdx] = getCellValueAsString(cell);
+                                } else {
+                                    // Yes/No habit - store as integer state
+                                    if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+                                        tableRow[colIdx] = (int) cell.getNumericCellValue();
+                                    } else {
+                                        tableRow[colIdx] = STATE_X; // Default
+                                    }
+                                }
+                            }
+                        }
+
+                        model.addRow(tableRow);
+                    }
+                }
+
+                logger.info("Habits loaded from: " + filePath);
+            }
+
+        } catch (IOException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error loading habits from Excel", e);
+            JOptionPane.showMessageDialog(this,
+                    "Failed to load habits: " + e.getMessage(),
+                    "Load Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+// Helper method to safely get cell value as string
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                return String.valueOf(cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
     }
 
     /**

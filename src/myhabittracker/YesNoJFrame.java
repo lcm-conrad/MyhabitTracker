@@ -340,8 +340,8 @@ public class YesNoJFrame extends javax.swing.JFrame {
         }
 
         // dashboard must be a reference to the existing DashboardHabit instance
-        dashboard.addHabitRow(habitName);
-
+        dashboard.addHabitRow(habitName, null);
+        JOptionPane.showMessageDialog(this, "Habit '" + habitName + "' added successfully!");
         this.dispose();
     }//GEN-LAST:event_SaveButtonActionPerformed
 

@@ -361,21 +361,42 @@ private void setupPlaceholderBehavior() {
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         // TODO add your handling code here:
     String habitName = NameTextField.getText().trim();
-    String valueText = TargetNumTextField.getText().trim(); // numeric input
     String unit = UnitTextField.getText().trim();
+    String targetText = TargetNumTextField.getText().trim();
+    String threshold = (String) ThresholdComboBox.getSelectedItem();
 
-    if (habitName.isEmpty() || valueText.isEmpty() || unit.isEmpty() || habitName.equals(NAME_PLACEHOLDER)) {
-        JOptionPane.showMessageDialog(this, "Please fill in all fields.");
+    // Validate
+    if (habitName.isEmpty() || habitName.equals(NAME_PLACEHOLDER)) {
+        JOptionPane.showMessageDialog(this, "Please enter a habit name.");
         return;
     }
 
-    String valueWithUnit = valueText + " " + unit;
+    if (unit.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please enter a unit (e.g., km, L, hours).");
+        return;
+    }
 
-    // Add to dashboard
-    dashboard.addMeasurableHabit(habitName, valueWithUnit);
 
-    JOptionPane.showMessageDialog(this, "Habit added successfully!");
-    this.dispose(); // close window
+        // Parse target (optional)
+    double target = 0.0;
+    if (!targetText.isEmpty()) {
+        try {
+            target = Double.parseDouble(targetText);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Invalid target number.");
+            return;
+        }
+    }
+    
+    // Add habit with target info
+    if (target > 0) {
+        dashboard.addHabitRow(habitName, unit, target, threshold);
+    } else {
+        dashboard.addHabitRow(habitName, unit);
+    }
+
+    JOptionPane.showMessageDialog(this, "Habit '" + habitName + "' added successfully!");
+    this.dispose();
     }//GEN-LAST:event_saveButtonActionPerformed
 
     private void ClockTextFieldMMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldMMActionPerformed
