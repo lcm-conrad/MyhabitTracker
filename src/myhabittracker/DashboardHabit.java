@@ -6,6 +6,13 @@ package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Component;
+import java.awt.Container;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.System.Logger.Level;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.EventObject;
@@ -18,12 +25,16 @@ import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+<<<<<<< Updated upstream
 import java.util.HashSet;
 import java.util.Set;
 
+=======
+>>>>>>> Stashed changes
 /**
  *
  * @author asus
@@ -59,6 +70,14 @@ public class DashboardHabit extends javax.swing.JFrame {
         xIcon = new ImageIcon(getClass().getResource("/resources/x.png"));
         checkIcon = new ImageIcon(getClass().getResource("/resources/check.png"));
         doneIcon = new ImageIcon(getClass().getResource("/resources/done.png"));
+        Font customFont = loadCustomFont("/resources/fonts/Inter-Medium.otf", 14f);
+        if (customFont != null) {
+            //Apply to specific components (examples below)
+            applyFontToComponents(customFont, this);
+        } else {
+            Font fallbackFont = new Font("Arial", Font.PLAIN, 14);
+            applyFontToComponents(fallbackFont, this);
+        }
 
         setLocationRelativeTo(null);
         Preferences prefs = Preferences.userNodeForPackage(this.getClass());
@@ -193,6 +212,7 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
+<<<<<<< Updated upstream
         int row = jTable1.rowAtPoint(e.getPoint());
         int col = jTable1.columnAtPoint(e.getPoint());
         if (row < 0 || col < 1) return; // skip header or invalid clicks
@@ -205,10 +225,26 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
             model.setValueAt(nextState, row, col);
         }
     }
+=======
+                int row = jTable1.rowAtPoint(e.getPoint());
+                int col = jTable1.columnAtPoint(e.getPoint());
+                if (row >= 0 && col > 0) {  // Only day columns (col > 0)
+                    Object val = model.getValueAt(row, col);
+                    int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+
+                    // Binary toggle: Only between X (0) and Check (1); ignore/force-reset Done (2)
+                    int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+
+                    model.setValueAt(nextState, row, col);
+
+                }
+            }
+>>>>>>> Stashed changes
         });
         setVisible(true);
     }
 
+<<<<<<< Updated upstream
 public void addMeasurableHabit(String habitName, String valueWithUnit) {
     DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
 
@@ -256,6 +292,42 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
         return measurableHabits.contains(habitName);
     }
 
+=======
+    // ✅ NEW: Helper method to load the font (add this outside the constructor)
+    private Font loadCustomFont(String fontPath, float size) {
+        try (InputStream fontStream = getClass().getResourceAsStream(fontPath)) {
+            if (fontStream == null) {
+                logger.warning("Font file not found: " + fontPath);
+                return null;
+            }
+
+            // Create and register the font
+            Font baseFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(size);
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(baseFont);
+
+            logger.info("Custom font loaded successfully: " + baseFont.getName());
+            return baseFont;
+        } catch (FontFormatException | IOException e) {
+            logger.severe("Failed to load font from " + fontPath + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    // ✅ UPDATED: Recursive apply for current frame only (uses global font)
+    private void applyFontToComponents(Font font, Component component) {
+        // Only apply if not already customized (avoids overriding)
+        if (component.getFont() == null || component.getFont().getFamily().equals("dialog") || component.getFont().getFamily().equals("SansSerif")) {
+            component.setFont(font);
+        }
+        if (component instanceof Container) {
+            for (Component child : ((Container) component).getComponents()) {
+                applyFontToComponents(font, child);
+            }
+        }
+    }
+
+>>>>>>> Stashed changes
     // When a habit is added, we’ll call this later
     // to populate its default icons
     // Example usage:
@@ -454,6 +526,24 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
         JOptionPane.showMessageDialog(this, "Importing habits...");
         // TODO: load table data from CSV/Excel
     }
+// ✅ NEW: Static helper for main() (add this method; assumes DashboardHabit class access)
+
+   // ✅ UPDATED: Static helper for main() – now uses safe logging
+   private static Font loadGlobalFont(String fontPath, float size) {
+       try (InputStream fontStream = DashboardHabit.class.getResourceAsStream(fontPath)) {
+           if (fontStream == null) {
+               logger.log(Level.WARNING, "Font file not found: " + fontPath); // ✅ Fixed
+               return null;
+           }
+           Font baseFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(size);
+           GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(baseFont);
+           logger.log(Level.INFO, "Global font loaded: " + baseFont.getName()); // ✅ Fixed
+           return baseFont;
+       } catch (FontFormatException | IOException e) {
+           logger.log(Level.SEVERE, "Failed to load global font from " + fontPath + ": " + e.getMessage()); // ✅ Fixed
+           return null;
+       }
+   }
 
     /**
      * @param args the command line arguments
@@ -466,14 +556,12 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
         try {
-            javax.swing.UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(DashboardHabit.class.getName()).log(
-                    java.util.logging.Level.SEVERE, "Failed to initialize FlatLaf", ex);
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (UnsupportedLookAndFeelException ex) {
+            logger.log(Level.SEVERE, "Failed to initialize FlatLaf", ex);
             // Fallback to system L&F
             try {
-                javax.swing.UIManager.setLookAndFeel(
-                        javax.swing.UIManager.getSystemLookAndFeelClassName());
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException fallbackEx) {
                 // Use default if all fails
             }
