@@ -50,13 +50,13 @@
                       <Group type="102" attributes="0">
                           <Component id="ClockButton1" min="-2" max="-2" attributes="0"/>
                           <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                          <Component id="ClockTextFieldHH" min="-2" pref="34" max="-2" attributes="0"/>
+                          <Component id="ClockTextFieldHH" min="-2" pref="40" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="ReminderLabel1" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="ClockTextFieldMM" min="-2" pref="34" max="-2" attributes="0"/>
+                          <Component id="ClockTextFieldMM" min="-2" pref="40" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="AMPMCombo" min="-2" pref="53" max="-2" attributes="0"/>
+                          <Component id="AMPMCombo" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <Group type="102" attributes="0">
                           <Component id="UnitLabel" min="-2" max="-2" attributes="0"/>
@@ -234,6 +234,9 @@
               <Connection code="new javax.swing.DefaultComboBoxModel&lt;&gt;(new String[] { &quot;AM&quot;, &quot;PM&quot;})" type="code"/>
             </Property>
           </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AMPMComboActionPerformed"/>
+          </Events>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
           </AuxValues>
