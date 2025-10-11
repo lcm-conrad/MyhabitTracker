@@ -30,9 +30,12 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import java.util.HashSet;
 import java.util.Set;
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 /**
@@ -213,6 +216,7 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         int row = jTable1.rowAtPoint(e.getPoint());
         int col = jTable1.columnAtPoint(e.getPoint());
         if (row < 0 || col < 1) return; // skip header or invalid clicks
@@ -226,6 +230,8 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         }
     }
 =======
+=======
+>>>>>>> Stashed changes
                 int row = jTable1.rowAtPoint(e.getPoint());
                 int col = jTable1.columnAtPoint(e.getPoint());
                 if (row >= 0 && col > 0) {  // Only day columns (col > 0)
@@ -244,6 +250,7 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         setVisible(true);
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 public void addMeasurableHabit(String habitName, String valueWithUnit) {
     DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
@@ -293,6 +300,8 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
     }
 
 =======
+=======
+>>>>>>> Stashed changes
     // ✅ NEW: Helper method to load the font (add this outside the constructor)
     private Font loadCustomFont(String fontPath, float size) {
         try (InputStream fontStream = getClass().getResourceAsStream(fontPath)) {
@@ -327,6 +336,9 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
         }
     }
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     // When a habit is added, we’ll call this later
     // to populate its default icons
