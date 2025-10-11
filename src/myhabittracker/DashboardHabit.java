@@ -31,9 +31,12 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import java.util.HashSet;
 import java.util.Set;
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -217,6 +220,7 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
             public void mouseClicked(java.awt.event.MouseEvent e) {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         int row = jTable1.rowAtPoint(e.getPoint());
         int col = jTable1.columnAtPoint(e.getPoint());
         if (row < 0 || col < 1) return; // skip header or invalid clicks
@@ -230,6 +234,8 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         }
     }
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
                 int row = jTable1.rowAtPoint(e.getPoint());
@@ -250,6 +256,7 @@ model = new DefaultTableModel(new Object[][]{}, columnNames) {
         setVisible(true);
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 public void addMeasurableHabit(String habitName, String valueWithUnit) {
@@ -302,6 +309,8 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     // ✅ NEW: Helper method to load the font (add this outside the constructor)
     private Font loadCustomFont(String fontPath, float size) {
         try (InputStream fontStream = getClass().getResourceAsStream(fontPath)) {
@@ -337,6 +346,9 @@ public void addMeasurableHabit(String habitName, String valueWithUnit) {
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
