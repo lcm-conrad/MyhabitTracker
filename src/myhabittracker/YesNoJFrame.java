@@ -595,13 +595,17 @@ public class YesNoJFrame extends javax.swing.JFrame {
             if (isEditMode) {
                 // Update existing habit
                 dashboard.updateHabit(
-                        editingRowIndex,
-                        habitName,
-                        reminder.getName(),
-                        false,
-                        null,
-                        0.0,
-                        null
+            editingRowIndex,
+            reminder.getName(),      // oldName
+            reminder.getName(),      // newName
+            true,                    // isMeasurable
+            reminder.getUnit(),      // newUnit
+            reminder.getTargetValue(), // newTarget
+            reminder.getThreshold(), // newThreshold
+            reminder.getText(),      // question
+            reminder.getFrequency(), // frequency
+            reminder.getDaysOfWeek(),// daysOfWeek
+            notes                    // notes
                 );
                 JOptionPane.showMessageDialog(this, 
                     "Habit '" + reminder.getName() + "' updated successfully!");

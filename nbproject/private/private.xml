@@ -3,20 +3,14 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Jeff/Desktop/FILE%20SAVE%20GIT%202102025/MyhabitTracker/src/myhabittracker/PinPasswordHabit.java</file>
-            <file>file:/C:/Users/Jeff/Desktop/FILE%20SAVE%20GIT%202102025/MyhabitTracker/src/myhabittracker/DashboardHabit.java</file>
-            <file>file:/C:/Users/Jeff/Desktop/FILE%20SAVE%20GIT%202102025/MyhabitTracker/src/myhabittracker/SecurityQuestionSetup.java</file>
-            <file>file:/C:/Users/Jeff/Desktop/FILE%20SAVE%20GIT%202102025/MyhabitTracker/nbproject/private/private.xml</file>
-            <file>file:/C:/Users/Jeff/Desktop/FILE%20SAVE%20GIT%202102025/MyhabitTracker/src/myhabittracker/addHabit.java</file>
-
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/MyhabitTracker.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/PinPasswordHabit.java</file>
-            <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/DashboardHabit.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/addHabit.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/YesNoJFrame.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/MeasurableJFrame.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/Reminder.java</file>
             <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/ReminderManager.java</file>
+            <file>file:/D:/Gits/MyhabitTracker/src/myhabittracker/DashboardHabit.java</file>
         </group>
     </open-files>
 </project-private>
