@@ -81,7 +81,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     private final Map<String, Reminder> habitReminders = new HashMap<>();
 
     // --- UI State ---
-    private boolean isSelectColumnVisible = false;
+    private final boolean isSelectColumnVisible = false;
 
     // State constants for Yes/No habits
     private static final int STATE_X = 0;
@@ -331,16 +331,16 @@ public class DashboardHabit extends javax.swing.JFrame {
     }
 
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
-    /**
-     * Gets the current column index for the "Habit" name column, accounting for
-     * whether the "Select" column is visible.
-     *
-     * @return The index of the habit name column.
-     */
-    private int getHabitNameColumnIndex() {
-        return isSelectColumnVisible ? 1 : 0;
-    }
-
+/**
+ * Gets the current column index for the "Habit" name column, accounting for
+ * whether the "Select" column is visible.
+ *
+ * @return The index of the habit name column.
+ */
+private int getHabitNameColumnIndex() {
+    return isSelectColumnVisible ? 1 : 0;
+}
+    
     /**
      * Checks if a habit is measurable (has units and targets).
      *
@@ -478,47 +478,92 @@ public class DashboardHabit extends javax.swing.JFrame {
      * @param newTarget The new target value
      * @param newThreshold The new threshold type
      */
-    public void updateHabit(int rowIndex, String oldName, String newName, boolean isMeasurable,
-            String newUnit, double newTarget, String newThreshold, String question,
-            Reminder.Frequency frequency, Set<DayOfWeek> daysOfWeek, String notes) {
+ /**
+ * Updates an existing habit with new metadata.
+ *
+ * @param rowIndex The row index in the table
+ * @param oldName The current habit name
+ * @param newName The new habit name
+ * @param isMeasurable Whether the habit is measurable
+ * @param newUnit The new unit of measurement
+ * @param newTarget The new target value
+ * @param newThreshold The new threshold type
+ * @param question The reminder question text
+ * @param frequency The reminder frequency
+ * @param daysOfWeek The days of the week for reminders
+ * @param notes Additional notes about the habit
+ */
+public void updateHabit(int rowIndex, String oldName, String newName, boolean isMeasurable,
+        String newUnit, double newTarget, String newThreshold, String question,
+        Reminder.Frequency frequency, Set<DayOfWeek> daysOfWeek, String notes) {
 
-        // Remove old metadata
-        measurableHabits.remove(oldName);
-        habitUnits.remove(oldName);
-        habitTargets.remove(oldName);
-        habitThresholds.remove(oldName);
-        Reminder oldReminder = habitReminders.remove(oldName);
+    // 1. Remove old metadata
+    measurableHabits.remove(oldName);
+    habitUnits.remove(oldName);
+    habitTargets.remove(oldName);
+    habitThresholds.remove(oldName);
+    habitNotes.remove(oldName);
+    Reminder oldReminder = habitReminders.remove(oldName);
 
-        // 2. Add new metadata
-        if (isMeasurable) {
-            measurableHabits.add(newName);
-            habitUnits.put(newName, newUnit);
-            habitTargets.put(newName, newTarget);
-            habitThresholds.put(newName, newThreshold);
+    // 2. Add new metadata
+    if (isMeasurable) {
+        measurableHabits.add(newName);
+        habitUnits.put(newName, newUnit);
+        habitTargets.put(newName, newTarget);
+        habitThresholds.put(newName, newThreshold);
+    }
+    habitNotes.put(newName, notes == null ? "" : notes);
+
+    // 3. Create and store updated Reminder metadata
+    Reminder reminderData = new Reminder();
+    reminderData.setName(newName);
+    reminderData.setText(question);
+    reminderData.setFrequency(frequency);
+    reminderData.setDaysOfWeek(daysOfWeek);
+    reminderData.setNotes(notes);
+
+    if (isMeasurable) {
+        reminderData.setType(Reminder.HabitType.MEASURABLE);
+        reminderData.setUnit(newUnit);
+        reminderData.setTargetValue(newTarget);
+        reminderData.setThreshold(newThreshold);
+    } else {
+        reminderData.setType(Reminder.HabitType.YES_NO);
+    }
+    
+    // Preserve time from old reminder if it exists
+    if (oldReminder != null && oldReminder.getTime() != null) {
+        reminderData.setTime(oldReminder.getTime());
+    }
+    
+    habitReminders.put(newName, reminderData);
+
+    // 4. Update ReminderManager
+    ReminderManager.getInstance().removeReminder(oldName);
+    ReminderManager.getInstance().addReminder(reminderData);
+
+    // 5. Update the table model
+    model.setValueAt(newName, rowIndex, getHabitNameColumnIndex());
+
+    // 6. Reset daily data for the updated row
+    int firstDataCol = getHabitNameColumnIndex() + 1;
+    if (isMeasurable) {
+        for (int i = firstDataCol; i < model.getColumnCount(); i++) {
+            model.setValueAt("0 " + newUnit, rowIndex, i);
         }
-
-        // 3. Update the table model
-        model.setValueAt(newName, rowIndex, getHabitNameColumnIndex());
-
-        // 4. Reset daily data for the updated row
-        int firstDataCol = getHabitNameColumnIndex() + 1;
-        if (isMeasurable) {
-            for (int i = firstDataCol; i < model.getColumnCount(); i++) {
-                model.setValueAt("0 " + newUnit, rowIndex, i);
-            }
-        } else {
-            LocalDate today = LocalDate.now();
-            for (int i = firstDataCol; i < model.getColumnCount(); i++) {
-                LocalDate date = today.minusDays(i - firstDataCol);
-                if (frequency == Reminder.Frequency.WEEKLY && daysOfWeek != null
-                        && !daysOfWeek.contains(date.getDayOfWeek())) {
-                    model.setValueAt(STATE_DONE, rowIndex, i);
-                } else {
-                    model.setValueAt(STATE_X, rowIndex, i);
-                }
+    } else {
+        LocalDate today = LocalDate.now();
+        for (int i = firstDataCol; i < model.getColumnCount(); i++) {
+            LocalDate date = today.minusDays(i - firstDataCol);
+            if (frequency == Reminder.Frequency.WEEKLY && daysOfWeek != null
+                    && !daysOfWeek.contains(date.getDayOfWeek())) {
+                model.setValueAt(STATE_DONE, rowIndex, i);
+            } else {
+                model.setValueAt(STATE_X, rowIndex, i);
             }
         }
     }
+}
 
     /**
      * Deletes the selected rows from the table after confirmation.
@@ -751,7 +796,7 @@ public class DashboardHabit extends javax.swing.JFrame {
 
                 String targetStr = getCellValueAsString(row.getCell(3));
                 if (!targetStr.isEmpty()) {
-                    habitTargets.put(habitName, Double.parseDouble(targetStr));
+                    habitTargets.put(habitName, Double.valueOf(targetStr));
                 }
 
                 habitThresholds.put(habitName, getCellValueAsString(row.getCell(4)));
@@ -979,8 +1024,8 @@ public class DashboardHabit extends javax.swing.JFrame {
                     .addComponent(DeleteButton)
                     .addComponent(EditButton))
                 .addGap(35, 35, 35)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(7, Short.MAX_VALUE))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 241, Short.MAX_VALUE)
+                .addGap(7, 7, 7))
         );
 
         pack();
@@ -1021,48 +1066,52 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     private void EditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EditButtonActionPerformed
         // TODO add your handling code here:
-        int selectedRow = jTable1.getSelectedRow();
+    int selectedRow = jTable1.getSelectedRow();
 
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this,
-                    "Please select a habit to edit.",
-                    "No Selection",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
+    if (selectedRow < 0) {
+        JOptionPane.showMessageDialog(this,
+                "Please select a habit to edit.",
+                "No Selection",
+                JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
 
-        String habitName = (String) model.getValueAt(selectedRow, getHabitNameColumnIndex());
-        Reminder storedReminder = habitReminders.get(habitName);
-        String notes = habitNotes.getOrDefault(habitName, "");
+    String habitName = (String) model.getValueAt(selectedRow, getHabitNameColumnIndex());
+    Reminder storedReminder = habitReminders.get(habitName);
+    String notes = habitNotes.getOrDefault(habitName, "");
 
-        if (isMeasurableHabit(habitName)) {
-            MeasurableJFrame measurableWindow = new MeasurableJFrame(this, storedReminder);
-            measurableWindow.populateForEdit(
-                    selectedRow,
-                    habitName,
-                    storedReminder != null ? storedReminder.getText() : null,
-                    habitUnits.getOrDefault(habitName, ""),
-                    habitTargets.getOrDefault(habitName, 0.0),
-                    habitThresholds.getOrDefault(habitName, "At least"),
-                    storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
-                    storedReminder != null ? storedReminder.getDaysOfWeek() : new HashSet<>(),
-                    storedReminder != null ? storedReminder.getTime() : null,
-                    notes
-            );
-            measurableWindow.setVisible(true);
-        } else {
-            YesNoJFrame yesNoWindow = new YesNoJFrame(this, storedReminder);
-            yesNoWindow.populateForEdit(
-                    selectedRow,
-                    habitName,
-                    storedReminder != null ? storedReminder.getText() : null,
-                    storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
-                    storedReminder != null ? storedReminder.getDaysOfWeek() : new HashSet<>(),
-                    storedReminder != null ? storedReminder.getTime() : null,
-                    notes
-            );
-            yesNoWindow.setVisible(true);
-        }
+    if (isMeasurableHabit(habitName)) {
+        MeasurableJFrame measurableWindow = new MeasurableJFrame(this, storedReminder);
+        measurableWindow.populateForEdit(
+                selectedRow,
+                habitName,
+                storedReminder != null ? storedReminder.getText() : "",
+                habitUnits.getOrDefault(habitName, ""),
+                habitTargets.getOrDefault(habitName, 0.0),
+                habitThresholds.getOrDefault(habitName, "At least"),
+                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                storedReminder != null && storedReminder.getDaysOfWeek() != null 
+                    ? storedReminder.getDaysOfWeek() 
+                    : new HashSet<>(),
+                storedReminder != null ? storedReminder.getTime() : null,
+                notes
+        );
+        measurableWindow.setVisible(true);
+    } else {
+        YesNoJFrame yesNoWindow = new YesNoJFrame(this, storedReminder);
+        yesNoWindow.populateForEdit(
+                selectedRow,
+                habitName,
+                storedReminder != null ? storedReminder.getText() : "",
+                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                storedReminder != null && storedReminder.getDaysOfWeek() != null 
+                    ? storedReminder.getDaysOfWeek() 
+                    : new HashSet<>(),
+                storedReminder != null ? storedReminder.getTime() : null,
+                notes
+        );
+        yesNoWindow.setVisible(true);
+    }
     }//GEN-LAST:event_EditButtonActionPerformed
 
     /**
@@ -1097,6 +1146,6 @@ public class DashboardHabit extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTable jTable1;
+    public javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables
 }
