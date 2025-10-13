@@ -114,6 +114,14 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         // Initialize placeholder behavior
         setupPlaceholderBehavior();
     }
+    /**
+ * Constructor for ADD mode (no existing reminder)
+ * @param dashboard
+ */
+public MeasurableJFrame(DashboardHabit dashboard) {
+    this(dashboard, null); // Call the main constructor with null reminder
+}
+
 
 private void setupPlaceholderBehavior() {
     UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(NameTextField, NAME_PLACEHOLDER);

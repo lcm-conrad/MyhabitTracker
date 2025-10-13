@@ -6,6 +6,16 @@ package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Component;
+<<<<<<< Updated upstream
+=======
+import java.awt.Container;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.Level;
+>>>>>>> Stashed changes
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.DayOfWeek;
@@ -35,6 +45,12 @@ import javax.swing.table.DefaultTableModel;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
+<<<<<<< Updated upstream
+=======
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+>>>>>>> Stashed changes
+
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -319,8 +335,31 @@ public class DashboardHabit extends javax.swing.JFrame {
                 String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
                 if (!isMeasurableHabit(habitName)) {
                     Object val = model.getValueAt(row, col);
+<<<<<<< Updated upstream
                     if (val instanceof Integer && (Integer) val == STATE_DONE) {
                         return; // Don't toggle "Done" states
+=======
+                    int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+                    int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+                    model.setValueAt(nextState, row, col);
+                }
+            }           
+        });
+        setVisible(true);
+
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) { // Double-click detected
+                    int row = jTable1.rowAtPoint(e.getPoint());
+                    int col = jTable1.columnAtPoint(e.getPoint());
+                    int habitColIndex = getHabitNameColumnIndex();
+
+                    // Check if double-clicked on habit name column
+                    if (row >= 0 && col == habitColIndex) {
+                        jTable1.setRowSelectionInterval(row, row);
+                        EditButtonActionPerformed(null); // Trigger edit
+>>>>>>> Stashed changes
                     }
                     int state = (val instanceof Integer) ? (Integer) val : STATE_X;
                     int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
@@ -328,6 +367,125 @@ public class DashboardHabit extends javax.swing.JFrame {
                 }
             }
         });
+<<<<<<< Updated upstream
+=======
+    }
+// NEW METHOD: Toggles the visibility of the Select column
+    private int getHabitNameColumnIndex() {
+        return isSelectColumnVisible ? 1 : 0;
+    }
+
+    private void toggleSelectColumn() {
+        if (isSelectColumnVisible) {
+            // REMOVE the column
+
+            // 1. Shift data back left (overwriting the data in column 0)
+            for (int i = 0; i < model.getRowCount(); i++) {
+                for (int j = 1; j < model.getColumnCount(); j++) {
+                    model.setValueAt(model.getValueAt(i, j), i, j - 1);
+                }
+            }
+
+            // 2. Reduce column count and remove the last column (which is now empty)
+            model.setColumnCount(model.getColumnCount() - 1);
+
+            // 3. Rename columns back to base names
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+            LocalDate today = LocalDate.now();
+            String[] newNames = new String[7];
+            newNames[0] = "Habit";
+            for (int i = 0; i < 6; i++) {
+                newNames[i + 1] = today.minusDays(i).format(formatter);
+            }
+            model.setColumnIdentifiers(newNames);
+
+            // 4. SYNCHRONIZE STATE AND BUTTON
+            DeleteButton.setVisible(false);
+            isSelectColumnVisible = false; // <-- SET STATE TO FALSE
+        } else {
+            // ADD the column (to the left of Habit)
+
+            int originalColumnCount = model.getColumnCount();
+
+            // 1. Increase column count
+            model.setColumnCount(originalColumnCount + 1);
+
+            // 2. Shift data right (from col N to col N+1) and set selection column value
+            for (int i = 0; i < model.getRowCount(); i++) {
+                for (int j = originalColumnCount - 1; j >= 0; j--) {
+                    model.setValueAt(model.getValueAt(i, j), i, j + 1);
+                }
+                // Set the new column value
+                model.setValueAt(Boolean.FALSE, i, 0); // New column is all FALSE
+            }
+
+            // 3. Set new column identifiers
+            String[] oldNames = new String[originalColumnCount];
+            for (int i = 0; i < originalColumnCount; i++) {
+                oldNames[i] = model.getColumnName(i);
+            }
+
+            String[] newNames = new String[originalColumnCount + 1];
+            newNames[0] = "Select";
+            for (int i = 0; i < originalColumnCount; i++) {
+                newNames[i + 1] = oldNames[i];
+            }
+            model.setColumnIdentifiers(newNames);
+
+            // 4. SYNCHRONIZE STATE AND BUTTON
+            DeleteButton.setVisible(true);
+            isSelectColumnVisible = true; // <-- SET STATE TO TRUE
+        }
+
+        // Refresh the table view
+        jTable1.revalidate();
+        jTable1.repaint();
+    }
+
+    public void addMeasurableHabit(String habitName, String valueWithUnit) {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+
+        // Find if habit already exists
+        int habitRow = -1;
+        for (int i = 0; i < model.getRowCount(); i++) {
+            if (model.getValueAt(i, 0).equals(habitName)) {
+                habitRow = i;
+                break;
+            }
+        }
+
+        if (habitRow == -1) {
+            // Habit doesn't exist yet - shouldn't happen if addHabitRow was called first
+            JOptionPane.showMessageDialog(null, "Habit not found: " + habitName);
+            return;
+        }
+
+        // Determine which date column to fill (today's date)
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd");
+        String todayCol = fmt.format(today);
+
+        int colIndex = -1;
+        for (int c = 1; c < model.getColumnCount(); c++) {
+            if (model.getColumnName(c).equals(todayCol)) {
+                colIndex = c;
+                break;
+            }
+        }
+
+        // If today's column doesn't exist, optionally handle
+        if (colIndex == -1) {
+            JOptionPane.showMessageDialog(null, "Today's column not found!");
+            return;
+        }
+
+        // Update cell with the actual value
+        model.setValueAt(valueWithUnit, habitRow, colIndex);
+    }
+
+    public String getHabitUnit(String habitName) {
+        return habitUnits.getOrDefault(habitName, "");
+>>>>>>> Stashed changes
     }
 
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
@@ -624,8 +782,117 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             // Sheet 2: Reminder Metadata
             saveReminderMetadata(workbook);
 
+<<<<<<< Updated upstream
             // Sheet 3: Habit Data (Table View)
             saveHabitData(workbook);
+=======
+            int rowNum = 1;
+            for (int i = 0; i < model.getRowCount(); i++) {
+                String habitName = (String) model.getValueAt(i, habitColIndex);
+                Row row = metadataSheet.createRow(rowNum++);
+                String notes = habitNotes.getOrDefault(habitName, "");
+
+                row.createCell(0).setCellValue(habitName);
+
+                if (isMeasurableHabit(habitName)) {
+                    row.createCell(1).setCellValue("Measurable");
+                    row.createCell(2).setCellValue(getHabitUnit(habitName));
+
+                    Double target = habitTargets.get(habitName);
+                    if (target != null) {
+                        row.createCell(3).setCellValue(target);
+                    }
+
+                    String threshold = habitThresholds.get(habitName);
+                    if (threshold != null) {
+                        row.createCell(4).setCellValue(threshold);
+                    }
+
+                    // FIX: Save notes for measurable habits too
+                    row.createCell(5).setCellValue(notes);
+                } else {
+                    row.createCell(1).setCellValue("YesNo");
+                    row.createCell(2).setCellValue("");
+                    row.createCell(3).setCellValue("");
+                    row.createCell(4).setCellValue("");
+                    row.createCell(5).setCellValue(notes);
+                }
+            }
+
+            // Sheet 2: Habit Data (the table content)
+            Sheet dataSheet = workbook.createSheet("HabitData");
+
+            // Sheet 3: Reminder Metadata
+            Sheet reminderSheet = workbook.createSheet("ReminderData");
+            Row reminderHeaderRow = reminderSheet.createRow(0);
+            reminderHeaderRow.createCell(0).setCellValue("Habit Name");
+            reminderHeaderRow.createCell(1).setCellValue("Question");
+            reminderHeaderRow.createCell(2).setCellValue("Frequency");
+            reminderHeaderRow.createCell(3).setCellValue("Days Of Week");
+            reminderHeaderRow.createCell(4).setCellValue("Time");
+            reminderHeaderRow.createCell(5).setCellValue("Notes");
+
+            rowNum = 1;
+            for (Map.Entry<String, Reminder> entry : habitReminders.entrySet()) {
+                Row row = reminderSheet.createRow(rowNum++);
+                Reminder rem = entry.getValue();
+
+                row.createCell(0).setCellValue(entry.getKey());
+                row.createCell(1).setCellValue(rem.getText() != null ? rem.getText() : "");
+                row.createCell(2).setCellValue(rem.getFrequency() != null ? rem.getFrequency().toString() : "");
+
+                // Days of week as comma-separated string
+                if (rem.getDaysOfWeek() != null && !rem.getDaysOfWeek().isEmpty()) {
+                    String days = rem.getDaysOfWeek().stream()
+                            .map(DayOfWeek::toString)
+                            .collect(java.util.stream.Collectors.joining(","));
+                    row.createCell(3).setCellValue(days);
+                }
+
+                row.createCell(4).setCellValue(rem.getTime() != null ? rem.getTime().toString() : "");
+                row.createCell(5).setCellValue(rem.getNotes() != null ? rem.getNotes() : "");
+            }
+
+            // Write column headers
+            Row dataHeaderRow = dataSheet.createRow(0);
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                dataHeaderRow.createCell(col).setCellValue(model.getColumnName(col));
+            }
+
+            // Write data rows
+            for (int row = 0; row < model.getRowCount(); row++) {
+                Row dataRow = dataSheet.createRow(row + 1);
+                for (int col = 0; col < model.getColumnCount(); col++) {
+                    Object value = model.getValueAt(row, col);
+                    Cell cell = dataRow.createCell(col);
+
+                    if (value instanceof String) {
+                        cell.setCellValue((String) value);
+                    } else if (value instanceof Integer) {
+                        cell.setCellValue((Integer) value);
+                    } else if (value != null) {
+                        cell.setCellValue(value.toString());
+                    }
+                }
+            }
+
+            // Auto-size columns
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                metadataSheet.autoSizeColumn(col);
+                dataSheet.autoSizeColumn(col);
+            }
+
+            // Save to file
+            String userHome = System.getProperty("user.home");
+            String filePath = userHome + File.separator + "MyHabitTracker_Data.xlsx";
+
+            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
+
+            workbook.close();
+            logger.log(java.util.logging.Level.INFO, "Habits saved to: {0}", filePath);
+>>>>>>> Stashed changes
 
             workbook.write(fileOut);
             logger.info("Habits saved successfully to " + filePath);
@@ -1066,6 +1333,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
 
     private void EditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EditButtonActionPerformed
         // TODO add your handling code here:
+<<<<<<< Updated upstream
     int selectedRow = jTable1.getSelectedRow();
 
     if (selectedRow < 0) {
@@ -1081,10 +1349,35 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
     String notes = habitNotes.getOrDefault(habitName, "");
 
     if (isMeasurableHabit(habitName)) {
+=======
+       int selectedRow = jTable1.getSelectedRow();
+
+    if (selectedRow < 0) {
+        JOptionPane.showMessageDialog(this, "Please select a habit to edit.",
+                "No Selection", JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
+
+    int habitColIndex = getHabitNameColumnIndex();
+    String habitName = (String) model.getValueAt(selectedRow, habitColIndex);
+    boolean isMeasurable = isMeasurableHabit(habitName);
+
+    // Get stored reminder data
+    Reminder storedReminder = habitReminders.get(habitName);
+    String notes = habitNotes.getOrDefault(habitName, "");
+
+    if (isMeasurable) {
+        String unit = habitUnits.getOrDefault(habitName, "");
+        double target = habitTargets.getOrDefault(habitName, 0.0);
+        String threshold = habitThresholds.getOrDefault(habitName, "At least");
+
+        // Pass the stored reminder to the constructor
+>>>>>>> Stashed changes
         MeasurableJFrame measurableWindow = new MeasurableJFrame(this, storedReminder);
         measurableWindow.populateForEdit(
                 selectedRow,
                 habitName,
+<<<<<<< Updated upstream
                 storedReminder != null ? storedReminder.getText() : "",
                 habitUnits.getOrDefault(habitName, ""),
                 habitTargets.getOrDefault(habitName, 0.0),
@@ -1093,20 +1386,38 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
                 storedReminder != null && storedReminder.getDaysOfWeek() != null 
                     ? storedReminder.getDaysOfWeek() 
                     : new HashSet<>(),
+=======
+                storedReminder != null ? storedReminder.getText() : null,
+                unit,
+                target,
+                threshold,
+                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                storedReminder != null ? storedReminder.getDaysOfWeek() : new HashSet<>(),
+>>>>>>> Stashed changes
                 storedReminder != null ? storedReminder.getTime() : null,
                 notes
         );
         measurableWindow.setVisible(true);
     } else {
+<<<<<<< Updated upstream
+=======
+        // For Yes/No habits - pass the stored reminder
+>>>>>>> Stashed changes
         YesNoJFrame yesNoWindow = new YesNoJFrame(this, storedReminder);
         yesNoWindow.populateForEdit(
                 selectedRow,
                 habitName,
+<<<<<<< Updated upstream
                 storedReminder != null ? storedReminder.getText() : "",
                 storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
                 storedReminder != null && storedReminder.getDaysOfWeek() != null 
                     ? storedReminder.getDaysOfWeek() 
                     : new HashSet<>(),
+=======
+                storedReminder != null ? storedReminder.getText() : null,
+                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                storedReminder != null ? storedReminder.getDaysOfWeek() : new HashSet<>(),
+>>>>>>> Stashed changes
                 storedReminder != null ? storedReminder.getTime() : null,
                 notes
         );
