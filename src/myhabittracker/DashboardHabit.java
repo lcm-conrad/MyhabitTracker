@@ -335,10 +335,8 @@ public class DashboardHabit extends javax.swing.JFrame {
                 String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
                 if (!isMeasurableHabit(habitName)) {
                     Object val = model.getValueAt(row, col);
-<<<<<<< Updated upstream
                     if (val instanceof Integer && (Integer) val == STATE_DONE) {
                         return; // Don't toggle "Done" states
-=======
                     int state = (val instanceof Integer) ? (Integer) val : STATE_X;
                     int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
                     model.setValueAt(nextState, row, col);
@@ -359,7 +357,6 @@ public class DashboardHabit extends javax.swing.JFrame {
                     if (row >= 0 && col == habitColIndex) {
                         jTable1.setRowSelectionInterval(row, row);
                         EditButtonActionPerformed(null); // Trigger edit
->>>>>>> Stashed changes
                     }
                     int state = (val instanceof Integer) ? (Integer) val : STATE_X;
                     int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
@@ -367,8 +364,6 @@ public class DashboardHabit extends javax.swing.JFrame {
                 }
             }
         });
-<<<<<<< Updated upstream
-=======
     }
 // NEW METHOD: Toggles the visibility of the Select column
     private int getHabitNameColumnIndex() {
@@ -485,7 +480,6 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     public String getHabitUnit(String habitName) {
         return habitUnits.getOrDefault(habitName, "");
->>>>>>> Stashed changes
     }
 
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
