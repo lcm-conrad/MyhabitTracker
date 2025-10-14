@@ -68,7 +68,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     private DefaultTableModel model;
 
     // Icons
-    private ImageIcon xIcon, checkIcon, doneIcon;
+    private ImageIcon xIcon, checkIcon, addCircleIcon, editIcon;
 
     // Save timer for debouncing
     private Timer saveTimer;
@@ -105,11 +105,11 @@ public class DashboardHabit extends javax.swing.JFrame {
     /**
      * Initializes the main frame settings.
      */
-    private void setupFrame() { 
+    private void setupFrame() {
         setTitle("MyHabitTracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-    getContentPane().setBackground(FRAME_COLOR);
+        getContentPane().setBackground(FRAME_COLOR);
 
     }
 
@@ -119,9 +119,10 @@ public class DashboardHabit extends javax.swing.JFrame {
      */
     private void loadIcons() {
         try {
-            xIcon = new ImageIcon(getClass().getResource("/resources/x.png"));
-            checkIcon = new ImageIcon(getClass().getResource("/resources/check.png"));
-            doneIcon = new ImageIcon(getClass().getResource("/resources/done.png"));
+            addCircleIcon = new ImageIcon(getClass().getResource("/resources/addcircle.png"));
+            editIcon = new ImageIcon(getClass().getResource("/resources/edit.png"));
+            xIcon = CheckboxIconGenerator.createEmptyCheckbox();
+            checkIcon = CheckboxIconGenerator.createFilledCheckbox();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to load icons.", e);
         }
@@ -238,7 +239,7 @@ public class DashboardHabit extends javax.swing.JFrame {
                         case STATE_CHECK ->
                             label.setIcon(checkIcon);
                         case STATE_DONE ->
-                            label.setIcon(doneIcon);
+                            label.setIcon(null);
                         default ->
                             label.setIcon(xIcon);
                     }
