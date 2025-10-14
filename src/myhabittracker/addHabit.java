@@ -12,6 +12,7 @@ public class addHabit extends javax.swing.JFrame {
 
     private YesNoJFrame YesNoWindow;
     private MeasurableJFrame setMeasurableWindow;
+    private Reminder existingReminder;
     private final DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
 
@@ -43,7 +44,7 @@ public class addHabit extends javax.swing.JFrame {
 
     public void openMeasurableJFrame() {
         if (setMeasurableWindow == null || !setMeasurableWindow.isShowing()) {
-            setMeasurableWindow = new MeasurableJFrame(dashboard);
+            setMeasurableWindow = new MeasurableJFrame(dashboard, existingReminder);
             setMeasurableWindow.setVisible(true);
         } else {
             setMeasurableWindow.toFront();

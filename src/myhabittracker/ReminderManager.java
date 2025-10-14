@@ -129,7 +129,7 @@ public class ReminderManager {
     private void fireReminder(Reminder reminder) {
         if (trayIcon != null) {
             trayIcon.displayMessage( null,
-                    reminder.getName() + reminder.getText() + " at "
+                    reminder.getName() + " " + reminder.getText() + " at "
                     + reminder.getTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")),
                     TrayIcon.MessageType.INFO
             );

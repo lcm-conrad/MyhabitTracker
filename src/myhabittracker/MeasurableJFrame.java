@@ -7,6 +7,7 @@ package myhabittracker;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.HeadlessException;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.time.DayOfWeek;
@@ -19,25 +20,35 @@ import myhabittracker.Reminder.Frequency;
 import myhabittracker.Reminder.HabitType;
 
 /**
- *
- * @author asus
+ * OPTIMIZED MeasurableJFrame with: - Fixed constructor to support both ADD and
+ * EDIT modes - Consolidated time parsing using TimeParser utility -
+ * Consolidated day parsing using DayOfWeekParser utility - Fixed edit mode to
+ * pass all parameters to updateHabit - Removed duplicate validation code -
+ * Improved placeholder handling
  */
 public class MeasurableJFrame extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MeasurableJFrame.class.getName());
+    private static final java.util.logging.Logger logger
+            = java.util.logging.Logger.getLogger(MeasurableJFrame.class.getName());
+
     private final DashboardHabit dashboard;
     private Reminder existingReminder;
-    JCheckBox monCheck, tueCheck, wedCheck, thuCheck, friCheck, satCheck, sunCheck;
-    // Placeholder text and color
-    private final String NAME_PLACEHOLDER = "e.g. Run";
-    private final String QUESTION_PLACEHOLDER = "e.g. How many km did you cover today?";
-    private final String CLOCK_HH_PLACEHOLDER = "00";
-    private final String CLOCK_MM_PLACEHOLDER = "00";
-    private final String NOTES_PLACEHOLDER = "";
-    private final Color PLACEHOLDER_COLOR = new Color(204, 204, 204);
-    private final Color TEXT_COLOR = Color.BLACK;
-    private final String UNIT_PLACEHOLDER = "e.g. km or cups";
-    private final String TARGET_NUM_PLACEHOLDER = "e.g. 10";
+
+    // Day checkboxes
+    private JCheckBox monCheck, tueCheck, wedCheck, thuCheck, friCheck, satCheck, sunCheck;
+
+    // Placeholder constants
+    private static final String NAME_PLACEHOLDER = "e.g. Run";
+    private static final String QUESTION_PLACEHOLDER = "e.g. How many km did you cover today?";
+    private static final String CLOCK_HH_PLACEHOLDER = "00";
+    private static final String CLOCK_MM_PLACEHOLDER = "00";
+    private static final String NOTES_PLACEHOLDER = "";
+    private static final String UNIT_PLACEHOLDER = "e.g. km or cups";
+    private static final String TARGET_NUM_PLACEHOLDER = "e.g. 10";
+    private static final Color PLACEHOLDER_COLOR = new Color(204, 204, 204);
+    private static final Color TEXT_COLOR = Color.BLACK;
+
+    // Edit mode tracking
     private int editingRowIndex = -1;
     private boolean isEditMode = false;
 
@@ -46,16 +57,29 @@ public class MeasurableJFrame extends javax.swing.JFrame {
      *
      * @param dashboard
      */
+    public MeasurableJFrame(DashboardHabit dashboard) {
+        this(dashboard, null);
+    }
+
+    /**
+     * FIXED: Constructor for EDIT mode
+     */
     public MeasurableJFrame(DashboardHabit dashboard, Reminder existingReminder) {
         this.dashboard = dashboard;
         this.existingReminder = existingReminder; // Save the reference
 
         initComponents();
-        
-        if (this.existingReminder != null) {
-            loadReminderData(this.existingReminder);
+        initializeUI();
+
+        // Load data AFTER UI setup but BEFORE placeholders
+        if (existingReminder != null) {
+            loadReminderData(existingReminder);
+        } else {
+            setupPlaceholderBehavior();
         }
-        // after initComponents() in YesNoJFrame constructor
+    }
+
+    private void initializeUI() {
         ReminderManager.getInstance().startScheduler();
 
         setSize(getPreferredSize());
@@ -63,6 +87,11 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        // Setup days panel
+        setupDaysPanel();
+    }
+
+    private void setupDaysPanel() {
         daysPanel.setLayout(new FlowLayout());
         monCheck = new JCheckBox("Mon");
         tueCheck = new JCheckBox("Tue");
@@ -85,347 +114,221 @@ public class MeasurableJFrame extends javax.swing.JFrame {
         // Initialize placeholder behavior
         setupPlaceholderBehavior();
     }
+    /**
+ * Constructor for ADD mode (no existing reminder)
+ * @param dashboard
+ */
+public MeasurableJFrame(DashboardHabit dashboard) {
+    this(dashboard, null); // Call the main constructor with null reminder
+}
 
-    public void populateForEdit(int rowIndex, String name, String question, String unit,
-            double target, String threshold, Frequency frequency,
-            Set<DayOfWeek> daysOfWeek, LocalTime time, String notes) {
-        this.editingRowIndex = rowIndex;
-        this.isEditMode = true;
 
-        // Populate fields
-        NameTextField.setText(name);
-        NameTextField.setForeground(TEXT_COLOR);
+private void setupPlaceholderBehavior() {
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(NameTextField, NAME_PLACEHOLDER);
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(QuestionTextField, QUESTION_PLACEHOLDER);
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(UnitTextField, UNIT_PLACEHOLDER);
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(TargetNumTextField, TARGET_NUM_PLACEHOLDER);
+    // Setup placeholders for time fields
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
+    UtilityClasses.PlaceholderUtils.setupTextFieldPlaceholder(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
+    UtilityClasses.PlaceholderUtils.setupTextAreaPlaceholder(notesArea, NOTES_PLACEHOLDER);
+}
 
-        if (question != null) {
-            QuestionTextField.setText(question);
-            QuestionTextField.setForeground(TEXT_COLOR);
-        }
 
-        if (unit != null) {
-            UnitTextField.setText(unit);
-            UnitTextField.setForeground(TEXT_COLOR);
-        }
-
-        TargetNumTextField.setText(String.valueOf(target));
-        TargetNumTextField.setForeground(TEXT_COLOR);
-
-        if (threshold != null) {
-            ThresholdComboBox.setSelectedItem(threshold);
-        }
-
-        // Set frequency
-        if (frequency != null) {
-            String freqDisplay = frequency.toString().charAt(0)
-                    + frequency.toString().substring(1).toLowerCase();
-            FreqButton.setSelectedItem(freqDisplay);
-        }
-
-        // Set days of week if weekly
-        if (frequency == Frequency.WEEKLY && daysOfWeek != null) {
-            daysPanel.setVisible(true);
-            monCheck.setSelected(daysOfWeek.contains(DayOfWeek.MONDAY));
-            tueCheck.setSelected(daysOfWeek.contains(DayOfWeek.TUESDAY));
-            wedCheck.setSelected(daysOfWeek.contains(DayOfWeek.WEDNESDAY));
-            thuCheck.setSelected(daysOfWeek.contains(DayOfWeek.THURSDAY));
-            friCheck.setSelected(daysOfWeek.contains(DayOfWeek.FRIDAY));
-            satCheck.setSelected(daysOfWeek.contains(DayOfWeek.SATURDAY));
-            sunCheck.setSelected(daysOfWeek.contains(DayOfWeek.SUNDAY));
-        }
-
-        // Set time
-        if (time != null) {
-            int hour = time.getHour();
-            int minute = time.getMinute();
-            String ampm = "AM";
-
-            if (hour >= 12) {
-                ampm = "PM";
-                if (hour > 12) {
-                    hour -= 12;
-                }
-            }
-            if (hour == 0) {
-                hour = 12;
-            }
-
-            ClockTextFieldHH.setText(String.format("%02d", hour));
-            ClockTextFieldHH.setForeground(TEXT_COLOR);
-            ClockTextFieldMM.setText(String.format("%02d", minute));
-            ClockTextFieldMM.setForeground(TEXT_COLOR);
-            AMPMCombo.setSelectedItem(ampm);
-        }
-
-        // Set notes
-        if (notes != null && !notes.isEmpty()) {
-            notesArea.setText(notes);
-            notesArea.setForeground(TEXT_COLOR);
-        }
-
-        // Change Save button text
-        saveButton.setText("Update");
-    }
-
-    private void setupPlaceholderBehavior() {
-        // NameTextField
-        setupTextFieldPlaceholder(NameTextField, NAME_PLACEHOLDER);
-
-        // QuestionTextField
-        setupTextFieldPlaceholder(QuestionTextField, QUESTION_PLACEHOLDER);
-
-        // FIX: Initialize UnitTextField placeholder
-        setupTextFieldPlaceholder(UnitTextField, UNIT_PLACEHOLDER);
-
-        // FIX: Initialize TargetNumTextField placeholder
-        setupTextFieldPlaceholder(TargetNumTextField, TARGET_NUM_PLACEHOLDER);
-
-        // ClockTextField (HH)
-        setupTextFieldPlaceholder(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
-
-        // ClockTextField1 (MM)
-        setupTextFieldPlaceholder(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
-
-        // Notes TextArea
-        setupTextAreaPlaceholder(notesArea, NOTES_PLACEHOLDER);
-    }
-
-    private void setupTextFieldPlaceholder(javax.swing.JTextField textField, String placeholder) {
-        textField.setForeground(PLACEHOLDER_COLOR);
-        textField.setText(placeholder);
-
-        textField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (textField.getText().equals(placeholder)) {
-                    textField.setText("");
-                    textField.setForeground(TEXT_COLOR);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (textField.getText().isEmpty()) {
-                    textField.setForeground(PLACEHOLDER_COLOR);
-                    textField.setText(placeholder);
-                }
-            }
-        });
-    }
-
-    private void setupTextAreaPlaceholder(javax.swing.JTextArea textArea, String placeholder) {
-        textArea.setForeground(PLACEHOLDER_COLOR);
-        textArea.setText(placeholder);
-
-        textArea.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (textArea.getText().equals(placeholder)) {
-                    textArea.setText("");
-                    textArea.setForeground(TEXT_COLOR);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (textArea.getText().isEmpty()) {
-                    textArea.setForeground(PLACEHOLDER_COLOR);
-                    textArea.setText(placeholder);
-                }
-            }
-        });
-    }
-
-    // NEW: Helper to get input, ignoring placeholder text
-    private String getInputText(javax.swing.JTextField textField, String placeholder) {
-        String text = textField.getText().trim();
-        return text.equals(placeholder) || text.isEmpty() ? null : text;
-    }
+// In getInputText() methods (replace with direct calls):
 
     private String getInputText(javax.swing.JTextArea textArea, String placeholder) {
-        String text = textArea.getText().trim();
-        // Also check against "(Optional)" text for notes
-        return text.equals(placeholder) || text.isEmpty() || text.equals("(Optional)") ? null : text;
+        return UtilityClasses.PlaceholderUtils.getInputText(textArea, placeholder);
     }
 
-    // NEW: Method to collect data and create Measurable Reminder
-    private Reminder createMeasurableReminder() throws IllegalArgumentException {
-        // 1. Validate mandatory fields
-        String name = getInputText(NameTextField, NAME_PLACEHOLDER);
-        String question = getInputText(QuestionTextField, QUESTION_PLACEHOLDER);
-        String unit = getInputText(UnitTextField, UNIT_PLACEHOLDER);
-        String targetNumStr = getInputText(TargetNumTextField, TARGET_NUM_PLACEHOLDER);
+    /**
+     * OPTIMIZED: Uses utility classes for validation and parsing
+     */
+private Reminder createMeasurableReminder() throws IllegalArgumentException {
+    String name = UtilityClasses.PlaceholderUtils.getInputText(NameTextField, NAME_PLACEHOLDER);
+    String question = UtilityClasses.PlaceholderUtils.getInputText(QuestionTextField, QUESTION_PLACEHOLDER);
+    String unit = UtilityClasses.PlaceholderUtils.getInputText(UnitTextField, UNIT_PLACEHOLDER);
+    String targetNumStr = UtilityClasses.PlaceholderUtils.getInputText(TargetNumTextField, TARGET_NUM_PLACEHOLDER);
 
-        if (name == null) {
-            throw new IllegalArgumentException("Habit name cannot be empty.");
-        }
-        if (question == null) {
-            throw new IllegalArgumentException("Habit question cannot be empty.");
-        }
-        if (unit == null) {
-            throw new IllegalArgumentException("Unit cannot be empty.");
-        }
-        if (targetNumStr == null) {
-            throw new IllegalArgumentException("Target number cannot be empty.");
-        }
+    name = UtilityClasses.InputValidator.validateHabitName(name, NAME_PLACEHOLDER);
+    question = UtilityClasses.InputValidator.validateQuestion(question, QUESTION_PLACEHOLDER);
+    unit = UtilityClasses.InputValidator.validateUnit(unit, UNIT_PLACEHOLDER);
+    double targetValue = UtilityClasses.InputValidator.validateTargetNumber(targetNumStr, TARGET_NUM_PLACEHOLDER);
 
-        double targetValue;
-        try {
-            targetValue = Double.parseDouble(targetNumStr);
-            if (targetValue <= 0) {
-                throw new NumberFormatException();
-            }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid target number. Must be a positive number.");
-        }
+    // Parse frequency
+    String freqStr = (String) FreqButton.getSelectedItem();
+    Reminder.Frequency frequency = UtilityClasses.FrequencyFormatter.parse(freqStr);
 
-        String freqStr = (String) FreqButton.getSelectedItem();
-        if (freqStr == null) {
-            throw new IllegalArgumentException("Frequency must be selected.");
-        }
-        Frequency frequency = Frequency.valueOf(freqStr.toUpperCase());
+    // FIXED: Parse time - now OPTIONAL
+    String hhStr = UtilityClasses.PlaceholderUtils.getInputText(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
+    String mmStr = UtilityClasses.PlaceholderUtils.getInputText(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
+    String ampm = (String) AMPMCombo.getSelectedItem();
 
-        // 2. Parse time
-        LocalTime time = null;
-        String hhStr = getInputText(ClockTextFieldHH, CLOCK_HH_PLACEHOLDER);
-        String mmStr = getInputText(ClockTextFieldMM, CLOCK_MM_PLACEHOLDER);
-        String ampm = (String) AMPMCombo.getSelectedItem();
+    LocalTime time = null;
+    // Only validate time if BOTH fields have input
+    if (hhStr != null && mmStr != null) {
+        time = UtilityClasses.TimeParser.parse12HourTime(hhStr, mmStr, ampm);
+    }
 
-        if (hhStr != null && mmStr != null) {
-            try {
-                int hour = Integer.parseInt(hhStr);
-                int minute = Integer.parseInt(mmStr);
+    // REMOVED: Don't throw error if time is null - it's now optional
+    // if (time == null) {
+    //     throw new IllegalArgumentException("Reminder time must be set.");
+    // }
 
-                if (hour < 1 || hour > 12 || minute < 0 || minute > 59) {
-                    throw new NumberFormatException();
-                }
+    // Get days
+    Set<DayOfWeek> daysOfWeek = UtilityClasses.DayOfWeekParser.getSelectedDays(daysPanel);
+    if (frequency == Reminder.Frequency.WEEKLY) {
+        UtilityClasses.InputValidator.validateWeeklyDays(daysOfWeek);
+    }
 
-                if (ampm.equals("PM") && hour != 12) {
-                    hour += 12;
-                } else if (ampm.equals("AM") && hour == 12) {
-                    hour = 0; // 12 AM is 00:xx in 24hr format
-                }
+    // Create Reminder object
+    Reminder reminder = new Reminder();
+    reminder.setType(HabitType.MEASURABLE);
+    reminder.setName(name);
+    reminder.setText(question);
+    reminder.setFrequency(frequency);
+    reminder.setTime(time); // Can be null now
+    reminder.setDaysOfWeek(daysOfWeek);
+    reminder.setNotes(UtilityClasses.InputValidator.validateNotes(
+        getInputText(notesArea, NOTES_PLACEHOLDER), NOTES_PLACEHOLDER));
 
-                time = LocalTime.of(hour, minute);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid time format.");
-            }
-        }
+    // Measurable-specific fields
+    reminder.setTargetValue(targetValue);
+    reminder.setUnit(unit);
+    reminder.setThreshold((String) ThresholdComboBox.getSelectedItem());
 
-        if (time == null) {
-            throw new IllegalArgumentException("Reminder time must be set.");
-        }
+    return reminder;
+}
 
-        // 3. Get DaysOfWeek for WEEKLY frequency
-        Set<DayOfWeek> daysOfWeek = new HashSet<>();
+public void populateForEdit(int rowIndex, String name, String question, String unit,
+        double target, String threshold, Frequency frequency,
+        Set<DayOfWeek> daysOfWeek, LocalTime time, String notes) {
+    this.editingRowIndex = rowIndex;
+    this.isEditMode = true;
+
+    // Populate name
+    NameTextField.setText(name);
+    NameTextField.setForeground(TEXT_COLOR);
+
+    // Populate question
+    if (question != null) {
+        QuestionTextField.setText(question);
+        QuestionTextField.setForeground(TEXT_COLOR);
+    }
+
+    // Populate unit
+    if (unit != null) {
+        UnitTextField.setText(unit);
+        UnitTextField.setForeground(TEXT_COLOR);
+    }
+
+    // Populate target
+    TargetNumTextField.setText(String.valueOf(target));
+    TargetNumTextField.setForeground(TEXT_COLOR);
+
+    // Set threshold
+    if (threshold != null) {
+        ThresholdComboBox.setSelectedItem(threshold);
+    }
+
+    // Set frequency
+    if (frequency != null) {
+        FreqButton.setSelectedItem(UtilityClasses.FrequencyFormatter.format(frequency));
+        
+        // Trigger visibility of days panel
         if (frequency == Frequency.WEEKLY) {
-            if (monCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.MONDAY);
-            }
-            if (tueCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.TUESDAY);
-            }
-            if (wedCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.WEDNESDAY);
-            }
-            if (thuCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.THURSDAY);
-            }
-            if (friCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.FRIDAY);
-            }
-            if (satCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.SATURDAY);
-            }
-            if (sunCheck.isSelected()) {
-                daysOfWeek.add(DayOfWeek.SUNDAY);
-            }
-
-            if (daysOfWeek.isEmpty()) {
-                throw new IllegalArgumentException("Must select at least one day for Weekly frequency.");
-            }
-        }
-
-        // 4. Create and populate Reminder object
-        Reminder reminder = new Reminder();
-        reminder.setType(HabitType.MEASURABLE);
-        reminder.setName(name);
-        reminder.setText(question);
-        reminder.setFrequency(frequency);
-        reminder.setTime(time);
-        reminder.setDaysOfWeek(daysOfWeek);
-        reminder.setNotes(getInputText(notesArea, NOTES_PLACEHOLDER));
-
-        // Measurable fields
-        reminder.setTargetValue(targetValue);
-        reminder.setUnit(unit);
-        reminder.setThreshold((String) ThresholdComboBox.getSelectedItem());
-
-        return reminder;
-    }
-    
-    
-private void loadReminderData(Reminder rem) {
-    // 1. Name Field
-    NameTextField.setText(rem.getName());
-    NameTextField.setForeground(Color.BLACK);
-    
-    // 2. QUESTION TEXT FIX
-    QuestionTextField.setText(rem.getText());
-    QuestionTextField.setForeground(Color.BLACK);
-    
-    // 3. Frequency
-    FreqButton.setSelectedItem(rem.getFrequency().toString());
-
-    // 4. Measurable Specific Fields
-    TargetNumTextField.setText(String.valueOf(rem.getTargetValue()));
-    UnitTextField.setText(rem.getUnit());
-    ThresholdComboBox.setSelectedItem(rem.getThreshold());
-    
-    TargetNumTextField.setForeground(Color.BLACK);
-    UnitTextField.setForeground(Color.BLACK);
-
-    // 5. Days of Week Checkboxes
-    for (Component comp : daysPanel.getComponents()) {
-        if (comp instanceof JCheckBox check) {
-            try {
-                DayOfWeek day = DayOfWeek.valueOf(check.getText().toUpperCase());
-                check.setSelected(rem.getDaysOfWeek().contains(day));
-            } catch (IllegalArgumentException e) {
-                // Ignore non-DayOfWeek checkboxes
-            }
+            daysPanel.setVisible(true);
+            UtilityClasses.DayOfWeekParser.setSelectedDays(daysPanel, daysOfWeek);
         }
     }
 
-    // 6. Time (Identical to YesNoJFrame logic)
-    LocalTime time = rem.getTime();
+    // FIXED: Set time using normal text color (not placeholder)
     if (time != null) {
-        int hour = time.getHour();
-        int minute = time.getMinute();
-        
-        String ampm = (hour < 12) ? "AM" : "PM";
-        if (hour == 0) {
-            hour = 12;
-        } else if (hour > 12) {
-            hour -= 12;
-        }
-
-        ClockTextFieldHH.setText(String.format("%02d", hour));
-        ClockTextFieldMM.setText(String.format("%02d", minute));
-        AMPMCombo.setSelectedItem(ampm);
-        
-        ClockTextFieldHH.setForeground(Color.BLACK);
-        ClockTextFieldMM.setForeground(Color.BLACK);
+        String[] timeComponents = UtilityClasses.TimeParser.to12HourFormat(time);
+        ClockTextFieldHH.setText(timeComponents[0]);
+        ClockTextFieldHH.setForeground(TEXT_COLOR); // BLACK, not placeholder
+        ClockTextFieldMM.setText(timeComponents[1]);
+        ClockTextFieldMM.setForeground(TEXT_COLOR); // BLACK, not placeholder
+        AMPMCombo.setSelectedItem(timeComponents[2]);
+    } else {
+        // If no time, leave as placeholder
+        ClockTextFieldHH.setText(CLOCK_HH_PLACEHOLDER);
+        ClockTextFieldHH.setForeground(PLACEHOLDER_COLOR);
+        ClockTextFieldMM.setText(CLOCK_MM_PLACEHOLDER);
+        ClockTextFieldMM.setForeground(PLACEHOLDER_COLOR);
     }
     
-    // 7. Notes
-    if (rem.getNotes() != null) {
+    // Set notes
+    if (notes != null && !notes.isEmpty()) {
+        notesArea.setText(notes);
+        notesArea.setForeground(TEXT_COLOR);
+    }
+
+    // Change button text
+    saveButton.setText("Update");
+}
+
+private void loadReminderData(Reminder rem) {
+    // Populate name
+    NameTextField.setText(rem.getName());
+    NameTextField.setForeground(TEXT_COLOR);
+    
+    // Populate question
+    if (rem.getText() != null) {
+        QuestionTextField.setText(rem.getText());
+        QuestionTextField.setForeground(TEXT_COLOR);
+    }
+
+    // Set frequency
+    if (rem.getFrequency() != null) {
+        FreqButton.setSelectedItem(UtilityClasses.FrequencyFormatter.format(rem.getFrequency()));
+        
+        if (rem.getFrequency() == Frequency.WEEKLY && rem.getDaysOfWeek() != null) {
+            daysPanel.setVisible(true);
+            UtilityClasses.DayOfWeekParser.setSelectedDays(daysPanel, rem.getDaysOfWeek());
+        }
+    }
+
+    // Measurable-specific fields
+    if (rem.getTargetValue() > 0) {
+        TargetNumTextField.setText(String.valueOf(rem.getTargetValue()));
+        TargetNumTextField.setForeground(TEXT_COLOR);
+    }
+    
+    if (rem.getUnit() != null) {
+        UnitTextField.setText(rem.getUnit());
+        UnitTextField.setForeground(TEXT_COLOR);
+    }
+    
+    if (rem.getThreshold() != null) {
+        ThresholdComboBox.setSelectedItem(rem.getThreshold());
+    }
+
+    // FIXED: Set time with normal text color
+    if (rem.getTime() != null) {
+        String[] timeComponents = UtilityClasses.TimeParser.to12HourFormat(rem.getTime());
+        ClockTextFieldHH.setText(timeComponents[0]);
+        ClockTextFieldHH.setForeground(TEXT_COLOR); // BLACK, not placeholder
+        ClockTextFieldMM.setText(timeComponents[1]);
+        ClockTextFieldMM.setForeground(TEXT_COLOR); // BLACK, not placeholder
+        AMPMCombo.setSelectedItem(timeComponents[2]);
+    } else {
+        // Leave as placeholder if no time
+        ClockTextFieldHH.setText(CLOCK_HH_PLACEHOLDER);
+        ClockTextFieldHH.setForeground(PLACEHOLDER_COLOR);
+        ClockTextFieldMM.setText(CLOCK_MM_PLACEHOLDER);
+        ClockTextFieldMM.setForeground(PLACEHOLDER_COLOR);
+    }
+    
+    // Set notes
+    if (rem.getNotes() != null && !rem.getNotes().isEmpty()) {
         notesArea.setText(rem.getNotes());
+        notesArea.setForeground(TEXT_COLOR);
     }
 }
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
+
+
+    // Generated code (initComponents method)
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -654,38 +557,37 @@ private void loadReminderData(Reminder rem) {
 
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         // TODO add your handling code here:
-        String habitName = NameTextField.getText().trim();
-        String unit = UnitTextField.getText().trim();
-        String targetText = TargetNumTextField.getText().trim();
-        String threshold = (String) ThresholdComboBox.getSelectedItem();
-
         try {
-            // 1. Use the correct helper method to validate and create the Reminder object
+            // Use the validation method to create reminder - this handles ALL validation
             Reminder reminder = createMeasurableReminder();
-            String notes = getInputText(notesArea, NOTES_PLACEHOLDER);
+            String notes = UtilityClasses.InputValidator.validateNotes(
+                    UtilityClasses.PlaceholderUtils.getInputText(notesArea, NOTES_PLACEHOLDER), NOTES_PLACEHOLDER);
 
-            // 2. Add reminder to scheduler
+            // Add to ReminderManager
             ReminderManager.getInstance().addReminder(reminder);
 
-            // 3. CORRECT CALL: Use the single, 6-parameter dashboard method, 
-            // passing all required data collected by createMeasurableReminder().
             if (isEditMode) {
-                // Update existing habit
+                // FIXED: Pass all required parameters to updateHabit
                 dashboard.updateHabit(
                         editingRowIndex,
-                        reminder.getName(),
-                        reminder.getName(),
-                        true,
-                        reminder.getUnit(),
-                        reminder.getTargetValue(),
-                        reminder.getThreshold()
+                        reminder.getName(), // oldName
+                        reminder.getName(), // newName
+                        true, // isMeasurable
+                        reminder.getUnit(), // newUnit
+                        reminder.getTargetValue(), // newTarget
+                        reminder.getThreshold(), // newThreshold
+                        reminder.getText(), // question
+                        reminder.getFrequency(), // frequency
+                        reminder.getDaysOfWeek(),// daysOfWeek
+                        notes // notes
                 );
-                JOptionPane.showMessageDialog(this, "Measurable Habit '" + reminder.getName() + "' updated successfully!");
+                UtilityClasses.UIUtils.showSuccessDialog(this,
+                        "Measurable Habit '" + reminder.getName() + "' updated successfully!");
             } else {
                 // Add new habit
                 dashboard.addHabitRow(
                         reminder.getName(),
-                        reminder.getText(), // FIX: Pass the question
+                        reminder.getText(),
                         reminder.getUnit(),
                         reminder.getTargetValue(),
                         reminder.getThreshold(),
@@ -693,42 +595,19 @@ private void loadReminderData(Reminder rem) {
                         reminder.getDaysOfWeek(),
                         notes
                 );
-
-                JOptionPane.showMessageDialog(this, "Measurable Habit '" + reminder.getName() + "' saved successfully!");
+                UtilityClasses.UIUtils.showSuccessDialog(this,
+                        "Measurable Habit '" + reminder.getName() + "' saved successfully!");
             }
+
             this.dispose();
 
-            // Catch the specific exception thrown by createMeasurableReminder()
         } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
+            UtilityClasses.UIUtils.showErrorDialog(this, e.getMessage());
         } catch (Exception e) {
-            // General catch for unexpected errors
-            JOptionPane.showMessageDialog(this, "An unexpected error occurred: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            logger.log(java.util.logging.Level.SEVERE, "Error saving habit", e);
+            UtilityClasses.UIUtils.showErrorDialog(this,
+                    "An unexpected error occurred: " + e.getMessage());
         }
-        // Validate
-        if (habitName.isEmpty() || habitName.equals(NAME_PLACEHOLDER)) {
-            JOptionPane.showMessageDialog(this, "Please enter a habit name.");
-            return;
-        }
-
-        if (unit.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a unit (e.g., km, L, hours).");
-            return;
-        }
-
-        // Parse target (optional)
-        double target = 0.0;
-        if (!targetText.isEmpty()) {
-            try {
-                target = Double.parseDouble(targetText);
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Invalid target number.");
-                return;
-            }
-        }
-
-        JOptionPane.showMessageDialog(this, "Habit '" + habitName + "' added successfully!");
-        this.dispose();
     }//GEN-LAST:event_saveButtonActionPerformed
 
     private void ClockTextFieldMMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockTextFieldMMActionPerformed
@@ -817,35 +696,13 @@ private void loadReminderData(Reminder rem) {
                         if (cb.isSelected()) {
                             String txt = cb.getText().toUpperCase();
                             switch (txt) {
-                                case "MON":
-                                case "MONDAY":
-                                    days.add(java.time.DayOfWeek.MONDAY);
-                                    break;
-                                case "TUE":
-                                case "TUES":
-                                case "TUESDAY":
-                                    days.add(java.time.DayOfWeek.TUESDAY);
-                                    break;
-                                case "WED":
-                                case "WEDNESDAY":
-                                    days.add(java.time.DayOfWeek.WEDNESDAY);
-                                    break;
-                                case "THU":
-                                case "THURSDAY":
-                                    days.add(java.time.DayOfWeek.THURSDAY);
-                                    break;
-                                case "FRI":
-                                case "FRIDAY":
-                                    days.add(java.time.DayOfWeek.FRIDAY);
-                                    break;
-                                case "SAT":
-                                case "SATURDAY":
-                                    days.add(java.time.DayOfWeek.SATURDAY);
-                                    break;
-                                case "SUN":
-                                case "SUNDAY":
-                                    days.add(java.time.DayOfWeek.SUNDAY);
-                                    break;
+                                case "MON", "MONDAY" -> days.add(java.time.DayOfWeek.MONDAY);
+                                case "TUE", "TUES", "TUESDAY" -> days.add(java.time.DayOfWeek.TUESDAY);
+                                case "WED", "WEDNESDAY" -> days.add(java.time.DayOfWeek.WEDNESDAY);
+                                case "THU", "THURSDAY" -> days.add(java.time.DayOfWeek.THURSDAY);
+                                case "FRI", "FRIDAY" -> days.add(java.time.DayOfWeek.FRIDAY);
+                                case "SAT", "SATURDAY" -> days.add(java.time.DayOfWeek.SATURDAY);
+                                case "SUN", "SUNDAY" -> days.add(java.time.DayOfWeek.SUNDAY);
                             }
                         }
                     }
@@ -860,8 +717,7 @@ private void loadReminderData(Reminder rem) {
             // register
             ReminderManager.getInstance().addReminder(rem);
             JOptionPane.showMessageDialog(this, "Reminder saved for " + time.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a")) + ".", "Saved", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (HeadlessException ex) {
             JOptionPane.showMessageDialog(this, "Failed to create reminder: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_ClockButton1ActionPerformed
@@ -869,11 +725,7 @@ private void loadReminderData(Reminder rem) {
     private void FreqButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FreqButtonActionPerformed
         // TODO add your handling code here:
         String selected = (String) FreqButton.getSelectedItem();
-        if ("Weekly".equals(selected)) {
-            daysPanel.setVisible(true);
-        } else {
-            daysPanel.setVisible(false);
-        }
+        daysPanel.setVisible("Weekly".equals(selected));
         revalidate();
         repaint();
     }//GEN-LAST:event_FreqButtonActionPerformed
