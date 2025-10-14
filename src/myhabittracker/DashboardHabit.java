@@ -35,6 +35,7 @@ import javax.swing.table.DefaultTableModel;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
+import java.awt.Color;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -83,6 +84,10 @@ public class DashboardHabit extends javax.swing.JFrame {
     // --- UI State ---
     private final boolean isSelectColumnVisible = false;
 
+// --- UI Colors ---
+    private static final Color FRAME_COLOR = new Color(238, 222, 223); // #EEDEDF
+    private static final Color BUTTON_COLOR = new Color(229, 222, 208); // #E5DED0
+
     // State constants for Yes/No habits
     private static final int STATE_X = 0;
     private static final int STATE_CHECK = 1;
@@ -100,10 +105,12 @@ public class DashboardHabit extends javax.swing.JFrame {
     /**
      * Initializes the main frame settings.
      */
-    private void setupFrame() {
+    private void setupFrame() { 
         setTitle("MyHabitTracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+    getContentPane().setBackground(FRAME_COLOR);
+
     }
 
     /**
@@ -331,16 +338,16 @@ public class DashboardHabit extends javax.swing.JFrame {
     }
 
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
-/**
- * Gets the current column index for the "Habit" name column, accounting for
- * whether the "Select" column is visible.
- *
- * @return The index of the habit name column.
- */
-private int getHabitNameColumnIndex() {
-    return isSelectColumnVisible ? 1 : 0;
-}
-    
+    /**
+     * Gets the current column index for the "Habit" name column, accounting for
+     * whether the "Select" column is visible.
+     *
+     * @return The index of the habit name column.
+     */
+    private int getHabitNameColumnIndex() {
+        return isSelectColumnVisible ? 1 : 0;
+    }
+
     /**
      * Checks if a habit is measurable (has units and targets).
      *
@@ -478,92 +485,92 @@ private int getHabitNameColumnIndex() {
      * @param newTarget The new target value
      * @param newThreshold The new threshold type
      */
- /**
- * Updates an existing habit with new metadata.
- *
- * @param rowIndex The row index in the table
- * @param oldName The current habit name
- * @param newName The new habit name
- * @param isMeasurable Whether the habit is measurable
- * @param newUnit The new unit of measurement
- * @param newTarget The new target value
- * @param newThreshold The new threshold type
- * @param question The reminder question text
- * @param frequency The reminder frequency
- * @param daysOfWeek The days of the week for reminders
- * @param notes Additional notes about the habit
- */
-public void updateHabit(int rowIndex, String oldName, String newName, boolean isMeasurable,
-        String newUnit, double newTarget, String newThreshold, String question,
-        Reminder.Frequency frequency, Set<DayOfWeek> daysOfWeek, String notes) {
+    /**
+     * Updates an existing habit with new metadata.
+     *
+     * @param rowIndex The row index in the table
+     * @param oldName The current habit name
+     * @param newName The new habit name
+     * @param isMeasurable Whether the habit is measurable
+     * @param newUnit The new unit of measurement
+     * @param newTarget The new target value
+     * @param newThreshold The new threshold type
+     * @param question The reminder question text
+     * @param frequency The reminder frequency
+     * @param daysOfWeek The days of the week for reminders
+     * @param notes Additional notes about the habit
+     */
+    public void updateHabit(int rowIndex, String oldName, String newName, boolean isMeasurable,
+            String newUnit, double newTarget, String newThreshold, String question,
+            Reminder.Frequency frequency, Set<DayOfWeek> daysOfWeek, String notes) {
 
-    // 1. Remove old metadata
-    measurableHabits.remove(oldName);
-    habitUnits.remove(oldName);
-    habitTargets.remove(oldName);
-    habitThresholds.remove(oldName);
-    habitNotes.remove(oldName);
-    Reminder oldReminder = habitReminders.remove(oldName);
+        // 1. Remove old metadata
+        measurableHabits.remove(oldName);
+        habitUnits.remove(oldName);
+        habitTargets.remove(oldName);
+        habitThresholds.remove(oldName);
+        habitNotes.remove(oldName);
+        Reminder oldReminder = habitReminders.remove(oldName);
 
-    // 2. Add new metadata
-    if (isMeasurable) {
-        measurableHabits.add(newName);
-        habitUnits.put(newName, newUnit);
-        habitTargets.put(newName, newTarget);
-        habitThresholds.put(newName, newThreshold);
-    }
-    habitNotes.put(newName, notes == null ? "" : notes);
-
-    // 3. Create and store updated Reminder metadata
-    Reminder reminderData = new Reminder();
-    reminderData.setName(newName);
-    reminderData.setText(question);
-    reminderData.setFrequency(frequency);
-    reminderData.setDaysOfWeek(daysOfWeek);
-    reminderData.setNotes(notes);
-
-    if (isMeasurable) {
-        reminderData.setType(Reminder.HabitType.MEASURABLE);
-        reminderData.setUnit(newUnit);
-        reminderData.setTargetValue(newTarget);
-        reminderData.setThreshold(newThreshold);
-    } else {
-        reminderData.setType(Reminder.HabitType.YES_NO);
-    }
-    
-    // Preserve time from old reminder if it exists
-    if (oldReminder != null && oldReminder.getTime() != null) {
-        reminderData.setTime(oldReminder.getTime());
-    }
-    
-    habitReminders.put(newName, reminderData);
-
-    // 4. Update ReminderManager
-    ReminderManager.getInstance().removeReminder(oldName);
-    ReminderManager.getInstance().addReminder(reminderData);
-
-    // 5. Update the table model
-    model.setValueAt(newName, rowIndex, getHabitNameColumnIndex());
-
-    // 6. Reset daily data for the updated row
-    int firstDataCol = getHabitNameColumnIndex() + 1;
-    if (isMeasurable) {
-        for (int i = firstDataCol; i < model.getColumnCount(); i++) {
-            model.setValueAt("0 " + newUnit, rowIndex, i);
+        // 2. Add new metadata
+        if (isMeasurable) {
+            measurableHabits.add(newName);
+            habitUnits.put(newName, newUnit);
+            habitTargets.put(newName, newTarget);
+            habitThresholds.put(newName, newThreshold);
         }
-    } else {
-        LocalDate today = LocalDate.now();
-        for (int i = firstDataCol; i < model.getColumnCount(); i++) {
-            LocalDate date = today.minusDays(i - firstDataCol);
-            if (frequency == Reminder.Frequency.WEEKLY && daysOfWeek != null
-                    && !daysOfWeek.contains(date.getDayOfWeek())) {
-                model.setValueAt(STATE_DONE, rowIndex, i);
-            } else {
-                model.setValueAt(STATE_X, rowIndex, i);
+        habitNotes.put(newName, notes == null ? "" : notes);
+
+        // 3. Create and store updated Reminder metadata
+        Reminder reminderData = new Reminder();
+        reminderData.setName(newName);
+        reminderData.setText(question);
+        reminderData.setFrequency(frequency);
+        reminderData.setDaysOfWeek(daysOfWeek);
+        reminderData.setNotes(notes);
+
+        if (isMeasurable) {
+            reminderData.setType(Reminder.HabitType.MEASURABLE);
+            reminderData.setUnit(newUnit);
+            reminderData.setTargetValue(newTarget);
+            reminderData.setThreshold(newThreshold);
+        } else {
+            reminderData.setType(Reminder.HabitType.YES_NO);
+        }
+
+        // Preserve time from old reminder if it exists
+        if (oldReminder != null && oldReminder.getTime() != null) {
+            reminderData.setTime(oldReminder.getTime());
+        }
+
+        habitReminders.put(newName, reminderData);
+
+        // 4. Update ReminderManager
+        ReminderManager.getInstance().removeReminder(oldName);
+        ReminderManager.getInstance().addReminder(reminderData);
+
+        // 5. Update the table model
+        model.setValueAt(newName, rowIndex, getHabitNameColumnIndex());
+
+        // 6. Reset daily data for the updated row
+        int firstDataCol = getHabitNameColumnIndex() + 1;
+        if (isMeasurable) {
+            for (int i = firstDataCol; i < model.getColumnCount(); i++) {
+                model.setValueAt("0 " + newUnit, rowIndex, i);
+            }
+        } else {
+            LocalDate today = LocalDate.now();
+            for (int i = firstDataCol; i < model.getColumnCount(); i++) {
+                LocalDate date = today.minusDays(i - firstDataCol);
+                if (frequency == Reminder.Frequency.WEEKLY && daysOfWeek != null
+                        && !daysOfWeek.contains(date.getDayOfWeek())) {
+                    model.setValueAt(STATE_DONE, rowIndex, i);
+                } else {
+                    model.setValueAt(STATE_X, rowIndex, i);
+                }
             }
         }
     }
-}
 
     /**
      * Deletes the selected rows from the table after confirmation.
@@ -929,6 +936,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
         jCheckBoxMenuItem1 = new javax.swing.JCheckBoxMenuItem();
         jMenu1 = new javax.swing.JMenu();
         jMenu2 = new javax.swing.JMenu();
+        jPopupMenu1 = new javax.swing.JPopupMenu();
         addHabit = new javax.swing.JButton();
         LockButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -945,7 +953,9 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
         jMenu2.setText("jMenu2");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
+        addHabit.setBackground(BUTTON_COLOR);
         addHabit.setText("Add Habit");
         addHabit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -953,6 +963,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             }
         });
 
+        LockButton.setBackground(BUTTON_COLOR);
         LockButton.setText("Lock");
         LockButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -960,6 +971,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             }
         });
 
+        jTable1.setBackground(BUTTON_COLOR);
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
@@ -972,6 +984,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
+        fileMenu.setBackground(BUTTON_COLOR);
         fileMenu.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Options", "Export", "Import"}));
         fileMenu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -979,6 +992,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             }
         });
 
+        DeleteButton.setBackground(BUTTON_COLOR);
         DeleteButton.setText("Delete");
         DeleteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -986,6 +1000,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             }
         });
 
+        EditButton.setBackground(BUTTON_COLOR);
         EditButton.setText("Edit");
         EditButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -999,18 +1014,18 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(DeleteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(EditButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(addHabit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 626, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(addHabit)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(DeleteButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(EditButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(LockButton)
                         .addGap(18, 18, 18)
-                        .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 639, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1018,14 +1033,19 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
             .addGroup(layout.createSequentialGroup()
                 .addGap(24, 24, 24)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(addHabit)
                     .addComponent(LockButton)
-                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(DeleteButton)
-                    .addComponent(EditButton))
-                .addGap(35, 35, 35)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 241, Short.MAX_VALUE)
-                .addGap(7, 7, 7))
+                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 225, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(addHabit)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(EditButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(DeleteButton)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
 
         pack();
@@ -1066,52 +1086,52 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
 
     private void EditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EditButtonActionPerformed
         // TODO add your handling code here:
-    int selectedRow = jTable1.getSelectedRow();
+        int selectedRow = jTable1.getSelectedRow();
 
-    if (selectedRow < 0) {
-        JOptionPane.showMessageDialog(this,
-                "Please select a habit to edit.",
-                "No Selection",
-                JOptionPane.INFORMATION_MESSAGE);
-        return;
-    }
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Please select a habit to edit.",
+                    "No Selection",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
 
-    String habitName = (String) model.getValueAt(selectedRow, getHabitNameColumnIndex());
-    Reminder storedReminder = habitReminders.get(habitName);
-    String notes = habitNotes.getOrDefault(habitName, "");
+        String habitName = (String) model.getValueAt(selectedRow, getHabitNameColumnIndex());
+        Reminder storedReminder = habitReminders.get(habitName);
+        String notes = habitNotes.getOrDefault(habitName, "");
 
-    if (isMeasurableHabit(habitName)) {
-        MeasurableJFrame measurableWindow = new MeasurableJFrame(this, storedReminder);
-        measurableWindow.populateForEdit(
-                selectedRow,
-                habitName,
-                storedReminder != null ? storedReminder.getText() : "",
-                habitUnits.getOrDefault(habitName, ""),
-                habitTargets.getOrDefault(habitName, 0.0),
-                habitThresholds.getOrDefault(habitName, "At least"),
-                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
-                storedReminder != null && storedReminder.getDaysOfWeek() != null 
-                    ? storedReminder.getDaysOfWeek() 
+        if (isMeasurableHabit(habitName)) {
+            MeasurableJFrame measurableWindow = new MeasurableJFrame(this, storedReminder);
+            measurableWindow.populateForEdit(
+                    selectedRow,
+                    habitName,
+                    storedReminder != null ? storedReminder.getText() : "",
+                    habitUnits.getOrDefault(habitName, ""),
+                    habitTargets.getOrDefault(habitName, 0.0),
+                    habitThresholds.getOrDefault(habitName, "At least"),
+                    storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                    storedReminder != null && storedReminder.getDaysOfWeek() != null
+                    ? storedReminder.getDaysOfWeek()
                     : new HashSet<>(),
-                storedReminder != null ? storedReminder.getTime() : null,
-                notes
-        );
-        measurableWindow.setVisible(true);
-    } else {
-        YesNoJFrame yesNoWindow = new YesNoJFrame(this, storedReminder);
-        yesNoWindow.populateForEdit(
-                selectedRow,
-                habitName,
-                storedReminder != null ? storedReminder.getText() : "",
-                storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
-                storedReminder != null && storedReminder.getDaysOfWeek() != null 
-                    ? storedReminder.getDaysOfWeek() 
+                    storedReminder != null ? storedReminder.getTime() : null,
+                    notes
+            );
+            measurableWindow.setVisible(true);
+        } else {
+            YesNoJFrame yesNoWindow = new YesNoJFrame(this, storedReminder);
+            yesNoWindow.populateForEdit(
+                    selectedRow,
+                    habitName,
+                    storedReminder != null ? storedReminder.getText() : "",
+                    storedReminder != null ? storedReminder.getFrequency() : Reminder.Frequency.DAILY,
+                    storedReminder != null && storedReminder.getDaysOfWeek() != null
+                    ? storedReminder.getDaysOfWeek()
                     : new HashSet<>(),
-                storedReminder != null ? storedReminder.getTime() : null,
-                notes
-        );
-        yesNoWindow.setVisible(true);
-    }
+                    storedReminder != null ? storedReminder.getTime() : null,
+                    notes
+            );
+            yesNoWindow.setVisible(true);
+        }
     }//GEN-LAST:event_EditButtonActionPerformed
 
     /**
@@ -1145,6 +1165,7 @@ public void updateHabit(int rowIndex, String oldName, String newName, boolean is
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
+    private javax.swing.JPopupMenu jPopupMenu1;
     private javax.swing.JScrollPane jScrollPane2;
     public javax.swing.JTable jTable1;
     // End of variables declaration//GEN-END:variables

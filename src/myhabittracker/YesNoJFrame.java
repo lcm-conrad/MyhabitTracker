@@ -336,7 +336,7 @@ private Reminder createYesNoReminder() throws IllegalArgumentException {
             }
         });
 
-        FreqButton.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Daily", "Weekly", "Monthly"}));
+        FreqButton.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Daily", "Weekly"}));
         FreqButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FreqButtonActionPerformed(evt);
