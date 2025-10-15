@@ -197,6 +197,7 @@ public class DashboardHabit extends javax.swing.JFrame {
         jTable1.setModel(model);
         jTable1.setRowHeight(40);
         jTable1.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        jTable1.getTableHeader().setReorderingAllowed(false);
 
         // OPTIMIZATION: Debounced save - only saves 2 seconds after last edit
         setupDebouncedSave();
