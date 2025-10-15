@@ -9,12 +9,12 @@ import java.awt.image.BufferedImage;
 /**
  * Utility class to generate checkbox icons programmatically.
  */
-public class CheckboxIconGenerator {
+class CheckboxIconGenerator {
     
     private static final int ICON_SIZE = 24;
     private static final int PADDING = 3;
     private static final Color CHECKBOX_COLOR = new Color(145, 204, 161); // #91cca1
-    private static final Color BORDER_COLOR = new Color(100, 100, 100);
+    private static final Color BORDER_COLOR = new Color(34, 34, 34);
     private static final float STROKE_WIDTH = 2.5f;
     
     /**

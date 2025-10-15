@@ -68,7 +68,7 @@ public class DashboardHabit extends javax.swing.JFrame {
     private DefaultTableModel model;
 
     // Icons
-    private ImageIcon xIcon, checkIcon, addCircleIcon, editIcon;
+    private ImageIcon xIcon, checkIcon, addCircleIcon, editIcon, deleteIcon;
 
     // Save timer for debouncing
     private Timer saveTimer;
@@ -99,6 +99,7 @@ public class DashboardHabit extends javax.swing.JFrame {
         loadIcons();
         setupWindowPersistence();
         setupTable();
+        setupTableHeaderRenderer();
         loadHabitsFromExcel(); // Load data after table is fully configured
     }
 
@@ -123,6 +124,12 @@ public class DashboardHabit extends javax.swing.JFrame {
             editIcon = new ImageIcon(getClass().getResource("/resources/edit.png"));
             xIcon = CheckboxIconGenerator.createEmptyCheckbox();
             checkIcon = CheckboxIconGenerator.createFilledCheckbox();
+            deleteIcon = new ImageIcon(getClass().getResource("/resources/delete.png"));
+
+            // Set icons on buttons
+            addHabit.setIcon(addCircleIcon);
+            EditButton.setIcon(editIcon);
+            DeleteButton.setIcon(deleteIcon);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to load icons.", e);
         }
@@ -213,6 +220,36 @@ public class DashboardHabit extends javax.swing.JFrame {
                 saveTimer.restart();
             } else {
                 saveTimer.start();
+            }
+        });
+    }
+
+    /**
+     * Sets up custom header renderer for the table. Call this method after
+     * setupTable() in the constructor.
+     */
+    private void setupTableHeaderRenderer() {
+        jTable1.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column);
+
+                // Set header background color
+                label.setBackground(BUTTON_COLOR);
+                label.setOpaque(true);
+                label.setHorizontalAlignment(SwingConstants.CENTER);
+
+                label.setFont(label.getFont().deriveFont(14f)); // 16pt font size
+
+                // Optional: Set border to match table header style
+                /*          label.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, Color.GRAY),
+                javax.swing.BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+                 */
+                return label;
             }
         });
     }
@@ -957,7 +994,8 @@ public class DashboardHabit extends javax.swing.JFrame {
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
         addHabit.setBackground(BUTTON_COLOR);
-        addHabit.setText("Add Habit");
+        addHabit.setText("Add");
+        addHabit.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         addHabit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addHabitActionPerformed(evt);
@@ -972,6 +1010,8 @@ public class DashboardHabit extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
+
         jTable1.setBackground(BUTTON_COLOR);
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -982,6 +1022,7 @@ public class DashboardHabit extends javax.swing.JFrame {
             }
         ));
         jTable1.setFont(javax.swing.UIManager.getFont("Table.font").deriveFont(12f));
+        jTable1.setName(""); // NOI18N
         jTable1.setPreferredSize(new java.awt.Dimension(1280, 720));
         jScrollPane2.setViewportView(jTable1);
 
@@ -995,6 +1036,8 @@ public class DashboardHabit extends javax.swing.JFrame {
 
         DeleteButton.setBackground(BUTTON_COLOR);
         DeleteButton.setText("Delete");
+        DeleteButton.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        DeleteButton.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         DeleteButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteButtonActionPerformed(evt);
@@ -1003,6 +1046,7 @@ public class DashboardHabit extends javax.swing.JFrame {
 
         EditButton.setBackground(BUTTON_COLOR);
         EditButton.setText("Edit");
+        EditButton.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         EditButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EditButtonActionPerformed(evt);
@@ -1015,10 +1059,10 @@ public class DashboardHabit extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(DeleteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(addHabit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(EditButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(addHabit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(DeleteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
@@ -1026,7 +1070,7 @@ public class DashboardHabit extends javax.swing.JFrame {
                         .addComponent(LockButton)
                         .addGap(18, 18, 18)
                         .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 639, Short.MAX_VALUE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 651, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
