@@ -36,6 +36,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.awt.Color;
+import java.awt.SystemTray;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -100,7 +101,86 @@ public class DashboardHabit extends javax.swing.JFrame {
         setupWindowPersistence();
         setupTable();
         setupTableHeaderRenderer();
-        loadHabitsFromExcel(); // Load data after table is fully configured
+        loadHabitsFromExcel();  // Load data after table is fully configured
+
+        ReminderManager.getInstance().setDashboard(this);
+        setupTrayMinimize();
+
+    }
+
+    private void setupTrayMinimize() {
+        // Change the default close operation to DO_NOTHING_ON_CLOSE
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        // Add window listener to handle close button
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // Save preferences
+                Preferences prefs = Preferences.userNodeForPackage(DashboardHabit.class);
+                prefs.putInt("windowX", getX());
+                prefs.putInt("windowY", getY());
+                prefs.putInt("windowW", getWidth());
+                prefs.putInt("windowH", getHeight());
+
+                // Show dialog asking user what they want to do
+                if (SystemTray.isSupported()) {
+                    Object[] options = {"Minimize to Tray", "Exit Application", "Cancel"};
+                    int choice = JOptionPane.showOptionDialog(
+                            DashboardHabit.this,
+                            "What would you like to do?",
+                            "Close Window",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            options,
+                            options[0]
+                    );
+
+                    switch (choice) {
+                        case 0: // Minimize to Tray
+                            ReminderManager.getInstance().minimizeToTray(DashboardHabit.this);
+                            break;
+                        case 1: // Exit Application
+                            // Stop and save immediately
+                            if (saveTimer != null && saveTimer.isRunning()) {
+                                saveTimer.stop();
+                                saveHabitsToExcel();
+                            }
+                            // Shutdown reminder scheduler
+                            ReminderManager.getInstance().shutdown();
+                            dispose();
+                            System.exit(0);
+                            break;
+                        case 2: // Cancel
+                        case JOptionPane.CLOSED_OPTION:
+                            // Do nothing - keep window open
+                            break;
+                    }
+                } else {
+                    // If tray is not supported, just ask to exit
+                    int confirm = JOptionPane.showConfirmDialog(
+                            DashboardHabit.this,
+                            "Are you sure you want to exit the application?",
+                            "Exit Application",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE
+                    );
+
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        // Stop and save immediately
+                        if (saveTimer != null && saveTimer.isRunning()) {
+                            saveTimer.stop();
+                            saveHabitsToExcel();
+                        }
+                        // Shutdown reminder scheduler
+                        ReminderManager.getInstance().shutdown();
+                        dispose();
+                        System.exit(0);
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -108,10 +188,8 @@ public class DashboardHabit extends javax.swing.JFrame {
      */
     private void setupFrame() {
         setTitle("MyHabitTracker");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(FRAME_COLOR);
-
     }
 
     /**

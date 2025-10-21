@@ -13,6 +13,9 @@ import java.time.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.*;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * Singleton manager: load/save reminders to Excel file and fire notifications.
@@ -21,6 +24,7 @@ import java.util.concurrent.*;
  */
 public class ReminderManager {
 
+    private DashboardHabit dashboardReference = null;
     private static ReminderManager instance;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final List<Reminder> reminders = new CopyOnWriteArrayList<>();
@@ -39,7 +43,7 @@ public class ReminderManager {
     private static final int COL_DAYS = 4;
     private static final int COL_LAST_FIRED = 5;
     private static final int COL_ENABLED = 6;
-    
+
     // NEW COLUMNS FOR HABIT DATA
     private static final int COL_TYPE = 7;
     private static final int COL_NAME = 8;
@@ -53,6 +57,10 @@ public class ReminderManager {
         setupTrayIcon();
         loadFromExcel(); // Load reminders on startup
         startScheduler(); // Start the background checker
+    }
+
+    public void setDashboard(DashboardHabit dashboard) {
+        this.dashboardReference = dashboard;
     }
 
     public static synchronized ReminderManager getInstance() {
@@ -128,7 +136,7 @@ public class ReminderManager {
 
     private void fireReminder(Reminder reminder) {
         if (trayIcon != null) {
-            trayIcon.displayMessage( null,
+            trayIcon.displayMessage(null,
                     reminder.getName() + " " + reminder.getText() + " at "
                     + reminder.getTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")),
                     TrayIcon.MessageType.INFO
@@ -162,10 +170,61 @@ public class ReminderManager {
                 g.dispose();
                 image = bi;
             }
+
             trayIcon = new TrayIcon(image, "MyHabitTracker");
             trayIcon.setImageAutoSize(true);
+
+            // Create popup menu
+            PopupMenu popup = new PopupMenu();
+
+            // "Open" menu item
+            MenuItem openItem = new MenuItem("Open");
+            openItem.addActionListener(e -> {
+                if (dashboardReference != null) {
+                    // Make the window visible and bring it to front
+                    dashboardReference.setVisible(true);
+                    dashboardReference.setState(java.awt.Frame.NORMAL); // Restore if minimized
+                    dashboardReference.toFront();
+                    dashboardReference.requestFocus();
+                } else {
+                    System.out.println("Dashboard reference not set");
+                }
+            });
+            popup.add(openItem);
+
+            // Separator
+            popup.addSeparator();
+
+            // "Exit" menu item
+            MenuItem exitItem = new MenuItem("Exit");
+            exitItem.addActionListener(e -> {
+                // Clean shutdown
+                shutdown();
+                // Remove tray icon
+                if (trayIcon != null) {
+                    tray.remove(trayIcon);
+                }
+                // Exit application
+                System.exit(0);
+            });
+            popup.add(exitItem);
+
+            // Set popup menu to tray icon
+            trayIcon.setPopupMenu(popup);
+
+            // Optional: Add double-click action to open dashboard
+            trayIcon.addActionListener(e -> {
+                if (dashboardReference != null) {
+                    dashboardReference.setVisible(true);
+                    dashboardReference.setState(java.awt.Frame.NORMAL);
+                    dashboardReference.toFront();
+                    dashboardReference.requestFocus();
+                }
+            });
+
             try {
                 tray.add(trayIcon);
+                System.out.println("Tray icon added successfully");
             } catch (AWTException e) {
                 System.err.println("Failed to add tray icon: " + e.getMessage());
                 trayIcon = null;
@@ -232,7 +291,7 @@ public class ReminderManager {
                 } catch (IllegalArgumentException ex) {
                     r.setType(HabitType.YES_NO); // Default to YES_NO if type is invalid/new column not yet used
                 }
-                
+
                 r.setName(getStringCell(row, COL_NAME));
                 r.setTargetValue(getDoubleCell(row, COL_TARGET));
                 r.setUnit(getStringCell(row, COL_UNIT));
@@ -244,6 +303,12 @@ public class ReminderManager {
         } catch (Exception ex) {
             System.err.println("Error loading reminders from Excel: " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+    public void minimizeToTray(DashboardHabit dashboard) {
+        if (trayIcon != null) {
+            dashboard.setVisible(false);
         }
     }
 
@@ -285,7 +350,7 @@ public class ReminderManager {
 
                 row.createCell(COL_LAST_FIRED).setCellValue(rem.getLastFiredDate() == null ? "" : rem.getLastFiredDate().toString());
                 row.createCell(COL_ENABLED).setCellValue(String.valueOf(rem.isEnabled()));
-                
+
                 // NEW FIELDS SAVING
                 row.createCell(COL_TYPE).setCellValue(rem.getType().toString());
                 row.createCell(COL_NAME).setCellValue(rem.getName());
@@ -293,7 +358,6 @@ public class ReminderManager {
                 row.createCell(COL_UNIT).setCellValue(rem.getUnit());
                 row.createCell(COL_THRESHOLD).setCellValue(rem.getThreshold());
                 row.createCell(COL_NOTES).setCellValue(rem.getNotes());
-
 
             }
 
@@ -308,19 +372,23 @@ public class ReminderManager {
             ex.printStackTrace();
         }
     }
-    
+
     // Helper method to safely retrieve String content from a cell
     private String getStringCell(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex);
-        if (cell == null) return "";
+        if (cell == null) {
+            return "";
+        }
         cell.setCellType(CellType.STRING);
         return cell.getStringCellValue().trim();
     }
-    
+
     // NEW Helper method to safely retrieve double content from a cell
     private double getDoubleCell(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex);
-        if (cell == null) return 0.0;
+        if (cell == null) {
+            return 0.0;
+        }
         try {
             if (cell.getCellType() == CellType.NUMERIC) {
                 return cell.getNumericCellValue();
@@ -333,7 +401,6 @@ public class ReminderManager {
         return 0.0;
     }
 
-
     // Cleanup method to shutdown scheduler gracefully
     public void shutdown() {
         scheduler.shutdown();
@@ -344,6 +411,15 @@ public class ReminderManager {
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
+        }
+
+        // Remove tray icon on shutdown
+        if (trayIcon != null) {
+            try {
+                SystemTray.getSystemTray().remove(trayIcon);
+            } catch (Exception e) {
+                System.err.println("Error removing tray icon: " + e.getMessage());
+            }
         }
     }
 }
