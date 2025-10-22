@@ -4,6 +4,8 @@
  */
 package myhabittracker;
 
+import java.awt.Color;
+
 /**
  *
  * @author asus
@@ -15,7 +17,8 @@ public class addHabit extends javax.swing.JFrame {
     private Reminder existingReminder;
     private final DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
-
+    private static final Color FRAME_COLOR = DashboardHabit.FRAME_COLOR;
+    private static final Color BUTTON_COLOR = DashboardHabit.BUTTON_COLOR;
     /**
      * Creates new form OptionPanel
      *
@@ -28,8 +31,16 @@ public class addHabit extends javax.swing.JFrame {
         setLocationRelativeTo(null);   // center on screen
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        applyColors();
     }
-
+    
+    private void applyColors() {
+        getContentPane().setBackground(FRAME_COLOR);
+        jPanel1.setBackground(FRAME_COLOR);
+        yesNobutton.setBackground(BUTTON_COLOR);
+        measurableButton.setBackground(BUTTON_COLOR);
+    }
+    
     public void openYesNoJFrame() {
         if (YesNoWindow == null || !YesNoWindow.isShowing()) {
             YesNoWindow = new YesNoJFrame(dashboard);
@@ -69,6 +80,7 @@ public class addHabit extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         yesNobutton.setText("Yes/No");
+        yesNobutton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         yesNobutton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 yesNobuttonActionPerformed(evt);
@@ -76,6 +88,7 @@ public class addHabit extends javax.swing.JFrame {
         });
 
         measurableButton.setText("Measurable");
+        measurableButton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         measurableButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 measurableButtonActionPerformed(evt);

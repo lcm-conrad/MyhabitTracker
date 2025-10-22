@@ -64,6 +64,11 @@
         <Component class="javax.swing.JButton" name="yesNobutton">
           <Properties>
             <Property name="text" type="java.lang.String" value="Yes/No"/>
+            <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+              <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">
+                <LineBorder roundedCorners="true" thickness="5"/>
+              </Border>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="yesNobuttonActionPerformed"/>
@@ -72,6 +77,11 @@
         <Component class="javax.swing.JButton" name="measurableButton">
           <Properties>
             <Property name="text" type="java.lang.String" value="Measurable"/>
+            <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+              <Border info="org.netbeans.modules.form.compat2.border.LineBorderInfo">
+                <LineBorder roundedCorners="true" thickness="5"/>
+              </Border>
+            </Property>
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="measurableButtonActionPerformed"/>

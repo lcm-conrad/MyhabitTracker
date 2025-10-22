@@ -5,6 +5,7 @@
 package myhabittracker;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -36,7 +37,16 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.awt.Color;
+import java.awt.Container;
+import java.awt.Point;
 import java.awt.SystemTray;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -74,6 +84,12 @@ public class DashboardHabit extends javax.swing.JFrame {
     // Save timer for debouncing
     private Timer saveTimer;
 
+    // Mouse coordinates
+    private Point mouseDownCompCoords;
+
+//Title Panel
+    private JPanel titlePanel;
+
     // --- Data Storage ---
     private final Set<String> measurableHabits = new HashSet<>();
     private final Map<String, String> habitUnits = new HashMap<>();
@@ -86,8 +102,8 @@ public class DashboardHabit extends javax.swing.JFrame {
     private final boolean isSelectColumnVisible = false;
 
 // --- UI Colors ---
-    private static final Color FRAME_COLOR = new Color(238, 222, 223); // #EEDEDF
-    private static final Color BUTTON_COLOR = new Color(229, 222, 208); // #E5DED0
+    public static final Color FRAME_COLOR = new Color(238, 222, 223); // #EEDEDF
+    public static final Color BUTTON_COLOR = new Color(229, 222, 208); // #E5DED0
 
     // State constants for Yes/No habits
     private static final int STATE_X = 0;
@@ -95,6 +111,8 @@ public class DashboardHabit extends javax.swing.JFrame {
     private static final int STATE_DONE = 2; // Represents a day off for weekly habits
 
     public DashboardHabit() {
+        setUndecorated(true);
+
         initComponents();
         setupFrame();
         loadIcons();
@@ -106,6 +124,86 @@ public class DashboardHabit extends javax.swing.JFrame {
         ReminderManager.getInstance().setDashboard(this);
         setupTrayMinimize();
 
+        // Create custom title bar after initComponents
+        createCustomTitleBar();
+    }
+
+    private void createCustomTitleBar() {
+        // Create a custom title bar panel
+        titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(FRAME_COLOR);
+
+        // Set size and position
+        int titleBarHeight = 30;
+        titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
+
+        // Title label
+        JLabel titleLabel = new JLabel("   MyHabitTracker");
+        titleLabel.setFont(titleLabel.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+
+        // Button panel for minimize and close
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 5, 2));
+        buttonPanel.setBackground(FRAME_COLOR);
+
+        // Minimize button
+        JButton minimizeButton = new JButton("-");
+        minimizeButton.setBackground(FRAME_COLOR);
+        minimizeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+        minimizeButton.setFocusPainted(false);
+        minimizeButton.addActionListener(e -> setState(java.awt.Frame.ICONIFIED));
+
+        // Close button
+        JButton closeButton = new JButton("×");
+        closeButton.setBackground(FRAME_COLOR);
+        closeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+        closeButton.setFocusPainted(false);
+        closeButton.setFont(closeButton.getFont().deriveFont(16f));
+        closeButton.addActionListener(e -> {
+            // Trigger the window closing event
+            dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
+        });
+
+        buttonPanel.add(minimizeButton);
+        buttonPanel.add(closeButton);
+
+        titlePanel.add(titleLabel, BorderLayout.WEST);
+        titlePanel.add(buttonPanel, BorderLayout.EAST);
+
+        // Add mouse listener for dragging the window
+        titlePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mouseDownCompCoords = e.getPoint();
+            }
+        });
+
+        titlePanel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Point currCoords = e.getLocationOnScreen();
+                setLocation(currCoords.x - mouseDownCompCoords.x,
+                        currCoords.y - mouseDownCompCoords.y);
+            }
+        });
+
+        // Add title panel to the layered pane (on top of everything)
+        getLayeredPane().add(titlePanel, JLayeredPane.PALETTE_LAYER);
+
+        // Adjust content pane to make room for title bar
+        Container contentPane = getContentPane();
+        java.awt.Insets insets = contentPane.getInsets();
+        contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
+
+        // Add component listener to resize title bar when window is resized
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                if (titlePanel != null) {
+                    titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
+                    contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
+                }
+            }
+        });
     }
 
     private void setupTrayMinimize() {

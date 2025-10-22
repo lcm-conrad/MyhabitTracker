@@ -8,8 +8,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.HeadlessException;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.HashSet;
