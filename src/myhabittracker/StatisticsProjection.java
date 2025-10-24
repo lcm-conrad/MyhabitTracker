@@ -1,4 +1,4 @@
-/*
+    /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
@@ -427,7 +427,7 @@ public class StatisticsProjection extends javax.swing.JFrame {
             JOptionPane.ERROR_MESSAGE);
     }
     
-    private LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
+    public static LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return null;
         }
