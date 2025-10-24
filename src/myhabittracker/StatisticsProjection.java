@@ -509,38 +509,50 @@ public class StatisticsProjection extends javax.swing.JFrame {
     }
     
     private void updateStatistics() {
-        System.out.println("Updating statistics for " + currentMode.label + ", data points: " + dataPoints.size());
+        System.out.println("\n=== UPDATE STATISTICS ===");
+    System.out.println("Mode: " + currentMode.label + " (" + currentMode.days + " days)");
+    System.out.println("Total data points: " + dataPoints.size());
     
-        LocalDate cutoffDate = LocalDate.now().minusDays(currentMode.days);
-        Map<LocalDate, Double> filteredData = new TreeMap<>();
-        
-        // Filter data for the current view period
-        for (Map.Entry<LocalDate, Double> entry : dataPoints.entrySet()) {
-            if (!entry.getKey().isBefore(cutoffDate)) {
-                filteredData.put(entry.getKey(), entry.getValue());
-            }
+    LocalDate today = LocalDate.now();
+    LocalDate cutoffDate = today.minusDays(currentMode.days);
+    
+    System.out.println("Today: " + today);
+    System.out.println("Cutoff: " + cutoffDate);
+    
+    Map<LocalDate, Double> filteredData = new TreeMap<>();
+    
+    for (Map.Entry<LocalDate, Double> entry : dataPoints.entrySet()) {
+        LocalDate entryDate = entry.getKey();
+        if (!entryDate.isBefore(cutoffDate) && !entryDate.isAfter(today)) {
+            filteredData.put(entryDate, entry.getValue());
         }
+    }
+    
+    System.out.println("Filtered: " + filteredData.size() + " points");
+    if (!filteredData.isEmpty()) {
+        // Get first and last dates
+        List<LocalDate> dates = new ArrayList<>(filteredData.keySet());
+        System.out.println("Date range: " + dates.get(0) + " to " + dates.get(dates.size()-1));
+    }
+    
+    if (!filteredData.isEmpty()) {
+        FlexibleLineChartPanel chartPanel = new FlexibleLineChartPanel(filteredData);
+        chartPanel.setPreferredSize(new Dimension(650, 350));
         
-        System.out.println("Filtered data points for " + currentMode.label + ": " + filteredData.size());
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(Color.WHITE);
+        wrapper.add(chartPanel, BorderLayout.CENTER);
         
-        // Create and display the chart
-        if (!filteredData.isEmpty()) {
-            FlexibleLineChartPanel chartPanel = new FlexibleLineChartPanel(filteredData);
-            chartPanel.setPreferredSize(new Dimension(650, 350));
-            
-            JPanel wrapper = new JPanel(new BorderLayout());
-            wrapper.setBackground(Color.WHITE);
-            wrapper.add(chartPanel, BorderLayout.CENTER);
-            
-            jScrollPane1.setViewportView(wrapper);
-            jScrollPane1.revalidate();
-            jScrollPane1.repaint();
-            
-            // Calculate and update statistics
-            updateStatisticsLabels(filteredData);
-        } else {
-            showNoDataMessage();
-        }
+        jScrollPane1.setViewportView(wrapper);
+        updateStatisticsLabels(filteredData);
+    } else {
+        showNoDataMessage();
+    }
+    
+    jScrollPane1.revalidate();
+    jScrollPane1.repaint();
+    revalidate();
+    repaint();
     }
 
     private void updateStatisticsLabels(Map<LocalDate, Double> filteredData) {
@@ -651,6 +663,39 @@ public class StatisticsProjection extends javax.swing.JFrame {
         private final Map<LocalDate, Double> data;
         private final int PADDING = 70;
         
+        private void drawLegend(Graphics2D g2, int width) {
+    int legendX = width - PADDING - 200;
+    int legendY = 50;
+    
+    g2.setFont(new Font("Arial", Font.PLAIN, 11));
+    
+    // Scheduled day success marker
+    g2.setColor(new Color(76, 175, 80));
+    g2.fillOval(legendX, legendY, 10, 10);
+    g2.setColor(Color.BLACK);
+    g2.drawString("Scheduled Day (Success)", legendX + 15, legendY + 9);
+    
+    // Scheduled day failure marker
+    legendY += 20;
+    g2.setColor(new Color(244, 67, 54));
+    g2.setStroke(new BasicStroke(2));
+    g2.drawLine(legendX + 2, legendY + 2, legendX + 8, legendY + 8);
+    g2.drawLine(legendX + 2, legendY + 8, legendX + 8, legendY + 2);
+    g2.setStroke(new BasicStroke(1));
+    g2.setColor(Color.BLACK);
+    g2.drawString("Scheduled Day (Missed)", legendX + 15, legendY + 9);
+    
+    // Goal line
+    legendY += 20;
+    g2.setColor(GOAL_LINE_COLOR);
+    g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
+    g2.drawLine(legendX, legendY + 5, legendX + 10, legendY + 5);
+    g2.setStroke(new BasicStroke(1));
+    g2.setColor(Color.BLACK);
+    g2.drawString("Goal (80%)", legendX + 15, legendY + 9);
+}
+
+        
         public FlexibleLineChartPanel(Map<LocalDate, Double> data) {
             this.data = new TreeMap<>(data);
             setBackground(Color.WHITE);
@@ -724,27 +769,29 @@ public class StatisticsProjection extends javax.swing.JFrame {
         }
         
 private void drawSuccessRateChart(Graphics2D g2, int width, int height) {
-    Map<LocalDate, Double> cumulativeRates = new TreeMap<>();
+   Map<LocalDate, Double> cumulativeRates = new TreeMap<>();
     int cumulativeSuccesses = 0;
     int cumulativeScheduled = 0;
     
-    // OPTION 1: Only include scheduled days in the graph
+    // FIXED: Include ALL dates in the graph, but only count scheduled days for rate
     for (LocalDate date : data.keySet()) {
+        // Check if this is a scheduled day (or if no schedule exists, treat all as scheduled)
         if (isScheduledDay(date)) {
             cumulativeScheduled++;
             if (data.get(date) > 0) {
                 cumulativeSuccesses++;
             }
-            
-            // Calculate rate and add to graph ONLY for scheduled days
-            double rate = cumulativeScheduled > 0 
-                    ? (cumulativeSuccesses / (double) cumulativeScheduled) * 100.0 
-                    : 0.0;
-            cumulativeRates.put(date, rate);
         }
+        
+        // CRITICAL FIX: Add the cumulative rate for EVERY date, not just scheduled ones
+        // This ensures the graph shows continuous data
+        double rate = cumulativeScheduled > 0 
+                ? (cumulativeSuccesses / (double) cumulativeScheduled) * 100.0 
+                : 0.0;
+        cumulativeRates.put(date, rate);
     }
     
-    // If no scheduled days, show message
+    // If no data at all, show message
     if (cumulativeRates.isEmpty()) {
         drawNoDataMessage(g2);
         return;
@@ -778,29 +825,36 @@ private void drawSuccessRateChart(Graphics2D g2, int width, int height) {
     drawLine(g2, points, CUMULATIVE_LINE_COLOR);
     drawScheduledDayMarkers(g2, dates, points);
     drawAxisLabel(g2, width, height, "Date", "Success Rate (%)");
+    drawLegend(g2,width);
 }
         
         private void drawScheduledDayMarkers(Graphics2D g2, List<LocalDate> dates, List<Point2D> points) {
             for (int i = 0; i < dates.size(); i++) {
-                LocalDate date = dates.get(i);
-                if (isScheduledDay(date)) {
-                    Point2D point = points.get(i);
-                    double value = data.get(date);
-                    
-                    if (value > 0) {
-                        g2.setColor(new Color(76, 175, 80));
-                        g2.fillOval((int) point.getX() - 5, (int) point.getY() - 5, 10, 10);
-                    } else {
-                        g2.setColor(new Color(244, 67, 54));
-                        g2.setStroke(new BasicStroke(2));
-                        int x = (int) point.getX();
-                        int y = (int) point.getY();
-                        g2.drawLine(x - 4, y - 4, x + 4, y + 4);
-                        g2.drawLine(x - 4, y + 4, x + 4, y - 4);
-                    }
-                }
+        LocalDate date = dates.get(i);
+        
+        // Only draw markers for scheduled days
+        if (isScheduledDay(date)) {
+            Point2D point = points.get(i);
+            double value = data.get(date);
+            
+            if (value > 0) {
+                // Success - green filled circle
+                g2.setColor(new Color(76, 175, 80));
+                g2.fillOval((int) point.getX() - 5, (int) point.getY() - 5, 10, 10);
+            } else {
+                // Failure - red X
+                g2.setColor(new Color(244, 67, 54));
+                g2.setStroke(new BasicStroke(2));
+                int x = (int) point.getX();
+                int y = (int) point.getY();
+                g2.drawLine(x - 4, y - 4, x + 4, y + 4);
+                g2.drawLine(x - 4, y + 4, x + 4, y - 4);
+                g2.setStroke(new BasicStroke(1)); // Reset stroke
             }
         }
+        // For non-scheduled days, don't draw any marker (line will pass through smoothly)
+    }
+}
         
         private void drawGoalLine(Graphics2D g2, int width, int height, double goalValue, double minValue, double maxValue) {
             double yScale = (double) (height - 2 * PADDING) / (maxValue - minValue);
@@ -1037,6 +1091,7 @@ private void drawSuccessRateChart(Graphics2D g2, int width, int height) {
         currentMode = ViewMode.MONTHLY;
     updateViewModeButton();
     updateStatistics();
+    repaint();
     }//GEN-LAST:event_monthlyButtonActionPerformed
 
     /**

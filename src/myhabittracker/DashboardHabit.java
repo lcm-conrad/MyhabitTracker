@@ -37,6 +37,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.awt.Color;
 import java.util.TreeMap;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -164,50 +166,48 @@ public class DashboardHabit extends javax.swing.JFrame {
     /**
      * Initializes the habits table with column headers and cell renderers.
      */
-    private void setupTable() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-        String[] columnNames = new String[7];
-        columnNames[0] = "Habit";
-        LocalDate today = LocalDate.now();
-        for (int i = 0; i < 6; i++) {
-            columnNames[i + 1] = today.minusDays(i).format(formatter);
+private void setupTable() {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+    String[] columnNames = new String[31];  // 1 + 30 days
+    columnNames[0] = "Habit";
+    LocalDate today = LocalDate.now();
+    
+    for (int i = 0; i < 30; i++) {
+        columnNames[i + 1] = today.minusDays(i).format(formatter);
+    }
+ 
+    model = new DefaultTableModel(new Object[][]{}, columnNames) {
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            if (isSelectColumnVisible && columnIndex == 0) {
+                return Boolean.class;
+            }
+            return Object.class;
         }
 
-        model = new DefaultTableModel(new Object[][]{}, columnNames) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                if (isSelectColumnVisible && columnIndex == 0) {
-                    return Boolean.class; // Checkbox column
-                }
-                return Object.class; // Handles String, Integer, etc.
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            if (isSelectColumnVisible && column == 0) {
+                return true;
             }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                if (isSelectColumnVisible && column == 0) {
-                    return true; // Checkbox is editable
-                }
-                if (column == getHabitNameColumnIndex()) {
-                    return false; // Habit name is not editable
-                }
-                String habitName = (String) getValueAt(row, getHabitNameColumnIndex());
-                return isMeasurableHabit(habitName);
+            if (column == getHabitNameColumnIndex()) {
+                return false;
             }
-        };
+            String habitName = (String) getValueAt(row, getHabitNameColumnIndex());
+            return isMeasurableHabit(habitName);
+        }
+    };
 
-        jTable1.setModel(model);
-        jTable1.setRowHeight(40);
-        jTable1.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        jTable1.getTableHeader().setReorderingAllowed(false);
+    jTable1.setModel(model);
+    jTable1.setRowHeight(40);
+    jTable1.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    jTable1.getTableHeader().setReorderingAllowed(false);
 
-        // OPTIMIZATION: Debounced save - only saves 2 seconds after last edit
-        setupDebouncedSave();
-
-        // Setup custom renderers and editors
-        setupTableRenderer();
-        setupTableCellEditor();
-        setupTableMouseListener();
-    }
+    setupDebouncedSave();
+    setupTableRenderer();
+    setupTableCellEditor();
+    setupTableMouseListener();
+}
 
     /**
      * Sets up debounced saving to prevent excessive Excel writes. Saves occur 2
@@ -381,6 +381,30 @@ public class DashboardHabit extends javax.swing.JFrame {
             }
         }
     });
+        jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+            jTable1.clearSelection();
+        }
+    });
+
+    jScrollPane2.getViewport().addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+            if (jTable1.rowAtPoint(e.getPoint()) < 0) {
+                jTable1.clearSelection();
+            }
+        }
+    });
+
+    getContentPane().addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+            if (!jScrollPane2.getBounds().contains(e.getPoint())) {
+                jTable1.clearSelection();
+            }
+        }
+    });
 }
     /**
  * Opens the statistics window for the selected habit.
@@ -388,11 +412,10 @@ public class DashboardHabit extends javax.swing.JFrame {
  * @param habitName The name of the habit to show statistics for
  */
 private void openStatisticsWindow(String habitName) {
-        try {
+         try {
         boolean isMeasurable = isMeasurableHabit(habitName);
         String unit = isMeasurable ? getHabitUnit(habitName) : "";
         
-        // Extract the habit data as Map<LocalDate, Double>
         Map<LocalDate, Double> habitData = extractHabitDataAsMap(habitName);
         
         // Debug output
@@ -418,7 +441,8 @@ private void openStatisticsWindow(String habitName) {
             "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
             "Error",
             JOptionPane.ERROR_MESSAGE);
-        }
+    }
+
 
         // Add listener to the scroll pane to detect clicks outside the table
         jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -942,19 +966,50 @@ private void openStatisticsWindow(String habitName) {
      *
      * @param workbook The Excel workbook
      */
-    private void saveHabitData(Workbook workbook) {
-        Sheet dataSheet = workbook.createSheet(SHEET_DATA);
-        Row dataHeader = dataSheet.createRow(0);
-        for (int col = 0; col < model.getColumnCount(); col++) {
-            dataHeader.createCell(col).setCellValue(model.getColumnName(col));
+/**
+ * Ensures Excel has columns for all days of the current month
+ */
+private void saveHabitData(Workbook workbook) {
+    Sheet dataSheet = workbook.createSheet(SHEET_DATA);
+    
+    LocalDate today = LocalDate.now();
+    LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+    int daysInMonth = today.lengthOfMonth();
+    
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+    
+    // Create header row with ALL days of the month
+    Row dataHeader = dataSheet.createRow(0);
+    dataHeader.createCell(0).setCellValue("Habit");
+    
+    // Add columns for every day of the month
+    for (int i = 0; i < daysInMonth; i++) {
+        LocalDate date = today.minusDays(i);
+        // Only include dates from current month
+        if (!date.isBefore(firstDayOfMonth)) {
+            dataHeader.createCell(i + 1).setCellValue(date.format(formatter));
         }
-
-        for (int rowIdx = 0; rowIdx < model.getRowCount(); rowIdx++) {
-            Row dataRow = dataSheet.createRow(rowIdx + 1);
-            for (int col = 0; col < model.getColumnCount(); col++) {
+    }
+    
+    // Save habit rows
+    for (int rowIdx = 0; rowIdx < model.getRowCount(); rowIdx++) {
+        Row dataRow = dataSheet.createRow(rowIdx + 1);
+        String habitName = (String) model.getValueAt(rowIdx, getHabitNameColumnIndex());
+        dataRow.createCell(0).setCellValue(habitName);
+        
+        // Map table columns to Excel columns by date
+        int firstDataCol = getHabitNameColumnIndex() + 1;
+        for (int col = firstDataCol; col < model.getColumnCount(); col++) {
+            String tableDateStr = model.getColumnName(col);
+            LocalDate tableDate = parseDateFromHeader(tableDateStr, today);
+            
+            if (tableDate != null) {
+                // Find corresponding Excel column for this date
+                int excelCol = (int) java.time.temporal.ChronoUnit.DAYS.between(tableDate, today) + 1;
+                
                 Object value = model.getValueAt(rowIdx, col);
-                Cell cell = dataRow.createCell(col);
-
+                Cell cell = dataRow.createCell(excelCol);
+                
                 if (value instanceof String s) {
                     cell.setCellValue(s);
                 } else if (value instanceof Integer i) {
@@ -964,8 +1019,24 @@ private void openStatisticsWindow(String habitName) {
                 }
             }
         }
+        
+        // Fill in missing days with default values
+        for (int day = 0; day < daysInMonth; day++) {
+            LocalDate date = today.minusDays(day);
+            if (!date.isBefore(firstDayOfMonth)) {
+                int excelCol = day + 1;
+                if (dataRow.getCell(excelCol) == null) {
+                    Cell cell = dataRow.createCell(excelCol);
+                    if (isMeasurableHabit(habitName)) {
+                        cell.setCellValue("0 " + getHabitUnit(habitName));
+                    } else {
+                        cell.setCellValue(STATE_X);
+                    }
+                }
+            }
+        }
     }
-
+}
     /**
      * Loads all habit data from the Excel file in the user's home directory.
      */
@@ -1311,9 +1382,362 @@ private void openStatisticsWindow(String habitName) {
 
     private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed
         // TODO add your handling code here:
-
+          String selected = (String) fileMenu.getSelectedItem();
+    
+    switch (selected) {
+        case "Export" -> {
+            exportHabits();
+            fileMenu.setSelectedIndex(0); // Reset to "Options"
+        }
+        case "Import" -> {
+            importHabits();
+            fileMenu.setSelectedIndex(0); // Reset to "Options"
+        }
+        default -> {
+            // "Options" selected - do nothing
+        }
+      }
     }//GEN-LAST:event_fileMenuActionPerformed
+      /**
+ * Exports all habits to a user-selected Excel file.
+ * Creates a complete backup of all habit data, metadata, and reminders.
+ */
+private void exportHabits() {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Export Habits");
+    
+    // Set default file name with timestamp
+    String timestamp = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+    fileChooser.setSelectedFile(new File("MyHabitTracker_Export_" + timestamp + ".xlsx"));
+    
+    // Only allow .xlsx files
+    FileNameExtensionFilter filter = new FileNameExtensionFilter(
+            "Excel Files (*.xlsx)", "xlsx");
+    fileChooser.setFileFilter(filter);
+    
+    int userSelection = fileChooser.showSaveDialog(this);
+    
+    if (userSelection == JFileChooser.APPROVE_OPTION) {
+        File fileToSave = fileChooser.getSelectedFile();
+        
+        // Ensure .xlsx extension
+        if (!fileToSave.getName().toLowerCase().endsWith(".xlsx")) {
+            fileToSave = new File(fileToSave.getAbsolutePath() + ".xlsx");
+        }
+        
+        // Check if file exists and confirm overwrite
+        if (fileToSave.exists()) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "File already exists. Do you want to overwrite it?",
+                    "Confirm Overwrite",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            
+            if (confirm != JOptionPane.YES_OPTION) {
+                return; // User chose not to overwrite
+            }
+        }
+        
+        try {
+            exportToFile(fileToSave);
+            JOptionPane.showMessageDialog(this,
+                    "Habits exported successfully to:\n" + fileToSave.getAbsolutePath(),
+                    "Export Successful",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error exporting habits", e);
+            JOptionPane.showMessageDialog(this,
+                    "Failed to export habits:\n" + e.getMessage(),
+                    "Export Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
 
+/**
+ * Exports habit data to the specified file.
+ * 
+ * @param file The file to export to
+ * @throws IOException If export fails
+ */
+private void exportToFile(File file) throws IOException {
+    try (Workbook workbook = new XSSFWorkbook(); 
+         FileOutputStream fileOut = new FileOutputStream(file)) {
+        
+        // Export all three sheets
+        saveHabitMetadata(workbook);
+        saveReminderMetadata(workbook);
+        saveHabitData(workbook);
+        
+        workbook.write(fileOut);
+        logger.info("Habits exported to: " + file.getAbsolutePath());
+    }
+}
+
+/**
+ * Imports habits from a user-selected Excel file.
+ * Allows users to choose whether to replace or merge with existing habits.
+ */
+private void importHabits() {
+    // Warn if there are existing habits
+    if (model.getRowCount() > 0) {
+        String[] options = {"Replace All", "Merge (Skip Duplicates)", "Cancel"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "You have " + model.getRowCount() + " existing habit(s).\n" +
+                "How would you like to import?\n\n" +
+                "• Replace All: Delete existing habits and import new ones\n" +
+                "• Merge: Keep existing habits, add new ones (skip duplicates)",
+                "Import Options",
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]);
+        
+        if (choice == 2 || choice == JOptionPane.CLOSED_OPTION) {
+            return; // User cancelled
+        }
+        
+        boolean replaceAll = (choice == 0);
+        performImport(replaceAll);
+    } else {
+        // No existing habits, just import
+        performImport(false);
+    }
+}
+
+/**
+ * Performs the actual import operation.
+ * 
+ * @param replaceAll If true, clears existing habits before importing
+ */
+private void performImport(boolean replaceAll) {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Import Habits");
+    
+    // Only allow .xlsx files
+    FileNameExtensionFilter filter = new FileNameExtensionFilter(
+            "Excel Files (*.xlsx)", "xlsx");
+    fileChooser.setFileFilter(filter);
+    
+    int userSelection = fileChooser.showOpenDialog(this);
+    
+    if (userSelection == JFileChooser.APPROVE_OPTION) {
+        File fileToImport = fileChooser.getSelectedFile();
+        
+        try {
+            importFromFile(fileToImport, replaceAll);
+            JOptionPane.showMessageDialog(this,
+                    "Habits imported successfully from:\n" + fileToImport.getAbsolutePath(),
+                    "Import Successful",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error importing habits", e);
+            JOptionPane.showMessageDialog(this,
+                    "Failed to import habits:\n" + e.getMessage(),
+                    "Import Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+
+/**
+ * Imports habit data from the specified file.
+ * 
+ * @param file The file to import from
+ * @param replaceAll If true, clears existing data before importing
+ * @throws IOException If import fails
+ */
+private void importFromFile(File file, boolean replaceAll) throws IOException {
+    if (!file.exists()) {
+        throw new IOException("File not found: " + file.getAbsolutePath());
+    }
+    
+    // Store existing habit names to check for duplicates
+    Set<String> existingHabits = new HashSet<>();
+    if (!replaceAll) {
+        int habitColIdx = getHabitNameColumnIndex();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            existingHabits.add((String) model.getValueAt(i, habitColIdx));
+        }
+    }
+    
+    try (FileInputStream fileIn = new FileInputStream(file); 
+         Workbook workbook = new XSSFWorkbook(fileIn)) {
+        
+        // Validate file structure
+        if (workbook.getSheet(SHEET_METADATA) == null || 
+            workbook.getSheet(SHEET_DATA) == null) {
+            throw new IOException("Invalid habit tracker file. Missing required sheets.");
+        }
+        
+        // If replacing all, clear everything first
+        if (replaceAll) {
+            clearAllHabits();
+        }
+        
+        // Load metadata
+        Sheet metadataSheet = workbook.getSheet(SHEET_METADATA);
+        if (metadataSheet != null) {
+            loadImportedMetadata(metadataSheet, existingHabits);
+        }
+        
+        // Load reminders
+        Sheet reminderSheet = workbook.getSheet(SHEET_REMINDERS);
+        if (reminderSheet != null) {
+            loadImportedReminders(reminderSheet, existingHabits);
+        }
+        
+        // Load table data
+        Sheet dataSheet = workbook.getSheet(SHEET_DATA);
+        if (dataSheet != null) {
+            loadImportedData(dataSheet, existingHabits);
+        }
+        
+        // Save the imported data immediately
+        if (saveTimer != null && saveTimer.isRunning()) {
+            saveTimer.stop();
+        }
+        saveHabitsToExcel();
+        
+        logger.info("Habits imported from: " + file.getAbsolutePath());
+    }
+}
+
+/**
+ * Clears all existing habits from the table and memory.
+ */
+private void clearAllHabits() {
+    model.setRowCount(0);
+    measurableHabits.clear();
+    habitUnits.clear();
+    habitTargets.clear();
+    habitThresholds.clear();
+    habitNotes.clear();
+    habitReminders.clear();
+    
+    // Clear from ReminderManager
+    for (Reminder rem : ReminderManager.getInstance().getReminders()) {
+        ReminderManager.getInstance().removeReminder(rem.getName());
+    }
+}
+
+/**
+ * Loads metadata from imported file, skipping duplicates if needed.
+ */
+private void loadImportedMetadata(Sheet metadataSheet, Set<String> existingHabits) {
+    for (int i = 1; i <= metadataSheet.getLastRowNum(); i++) {
+        Row row = metadataSheet.getRow(i);
+        if (row == null) continue;
+        
+        String habitName = getCellValueAsString(row.getCell(0));
+        if (habitName.isEmpty() || existingHabits.contains(habitName)) {
+            continue; // Skip empty or duplicate habits
+        }
+        
+        if ("Measurable".equals(getCellValueAsString(row.getCell(1)))) {
+            measurableHabits.add(habitName);
+            habitUnits.put(habitName, getCellValueAsString(row.getCell(2)));
+            
+            String targetStr = getCellValueAsString(row.getCell(3));
+            if (!targetStr.isEmpty()) {
+                habitTargets.put(habitName, Double.valueOf(targetStr));
+            }
+            
+            habitThresholds.put(habitName, getCellValueAsString(row.getCell(4)));
+        }
+        habitNotes.put(habitName, getCellValueAsString(row.getCell(5)));
+    }
+}
+
+/**
+ * Loads reminder data from imported file, skipping duplicates if needed.
+ */
+private void loadImportedReminders(Sheet reminderSheet, Set<String> existingHabits) {
+    for (int i = 1; i <= reminderSheet.getLastRowNum(); i++) {
+        Row row = reminderSheet.getRow(i);
+        if (row == null) continue;
+        
+        String habitName = getCellValueAsString(row.getCell(0));
+        if (habitName.isEmpty() || existingHabits.contains(habitName)) {
+            continue; // Skip empty or duplicate habits
+        }
+        
+        Reminder rem = new Reminder();
+        rem.setName(habitName);
+        rem.setText(getCellValueAsString(row.getCell(1)));
+        
+        String frequencyStr = getCellValueAsString(row.getCell(2));
+        if (!frequencyStr.isEmpty()) {
+            rem.setFrequency(Reminder.Frequency.valueOf(frequencyStr));
+        }
+        
+        String daysStr = getCellValueAsString(row.getCell(3));
+        if (!daysStr.isEmpty()) {
+            Set<DayOfWeek> days = new HashSet<>();
+            for (String day : daysStr.split(",")) {
+                days.add(DayOfWeek.valueOf(day.trim()));
+            }
+            rem.setDaysOfWeek(days);
+        }
+        
+        String timeStr = getCellValueAsString(row.getCell(4));
+        if (!timeStr.isEmpty()) {
+            rem.setTime(LocalTime.parse(timeStr));
+        }
+        
+        // Set type based on whether it's measurable
+        if (isMeasurableHabit(habitName)) {
+            rem.setType(Reminder.HabitType.MEASURABLE);
+            rem.setUnit(habitUnits.get(habitName));
+            rem.setTargetValue(habitTargets.getOrDefault(habitName, 0.0));
+            rem.setThreshold(habitThresholds.get(habitName));
+        } else {
+            rem.setType(Reminder.HabitType.YES_NO);
+        }
+        
+        habitReminders.put(habitName, rem);
+        ReminderManager.getInstance().addReminder(rem);
+    }
+}
+
+/**
+ * Loads table data from imported file, skipping duplicates if needed.
+ */
+private void loadImportedData(Sheet dataSheet, Set<String> existingHabits) {
+    for (int rowIdx = 1; rowIdx <= dataSheet.getLastRowNum(); rowIdx++) {
+        Row excelRow = dataSheet.getRow(rowIdx);
+        if (excelRow == null) continue;
+        
+        String habitName = getCellValueAsString(excelRow.getCell(getHabitNameColumnIndex()));
+        if (habitName.isEmpty() || existingHabits.contains(habitName)) {
+            continue; // Skip empty or duplicate habits
+        }
+        
+        Object[] tableRow = new Object[model.getColumnCount()];
+        
+        for (int colIdx = 0; colIdx < model.getColumnCount(); colIdx++) {
+            Cell cell = excelRow.getCell(colIdx);
+            
+            if (colIdx == getHabitNameColumnIndex()) {
+                tableRow[colIdx] = habitName;
+            } else if (isSelectColumnVisible && colIdx == 0) {
+                tableRow[colIdx] = cell != null && 
+                                   cell.getCellType() == CellType.BOOLEAN && 
+                                   cell.getBooleanCellValue();
+            } else {
+                if (isMeasurableHabit(habitName)) {
+                    tableRow[colIdx] = getCellValueAsString(cell);
+                } else {
+                    tableRow[colIdx] = (cell != null && cell.getCellType() == CellType.NUMERIC)
+                            ? (int) cell.getNumericCellValue() : STATE_X;
+                }
+            }
+        }
+        model.addRow(tableRow);
+    }
+}
     private void DeleteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteButtonActionPerformed
         // TODO add your handling code here:
         deleteSelectedRows();
