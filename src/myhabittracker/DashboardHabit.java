@@ -418,7 +418,7 @@ private void openStatisticsWindow(String habitName) {
             "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
             "Error",
             JOptionPane.ERROR_MESSAGE);
-        });
+        }
 
         // Add listener to the scroll pane to detect clicks outside the table
         jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -450,7 +450,7 @@ private void openStatisticsWindow(String habitName) {
             }
         });
     }
-}
+
   private Map<LocalDate, Double> extractHabitDataAsMap(String habitName) {
     Map<LocalDate, Double> habitData = new TreeMap<>();
     

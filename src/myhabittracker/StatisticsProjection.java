@@ -723,52 +723,62 @@ public class StatisticsProjection extends javax.swing.JFrame {
             drawAxisLabel(g2, width, height, "Date", unit);
         }
         
-        private void drawSuccessRateChart(Graphics2D g2, int width, int height) {
-            Map<LocalDate, Double> cumulativeRates = new TreeMap<>();
-            int cumulativeSuccesses = 0;
-            int cumulativeScheduled = 0;
-            
-            for (LocalDate date : data.keySet()) {
-                if (isScheduledDay(date)) {
-                    cumulativeScheduled++;
-                    if (data.get(date) > 0) {
-                        cumulativeSuccesses++;
-                    }
-                }
-                
-                double rate = cumulativeScheduled > 0 
-                        ? (cumulativeSuccesses / (double) cumulativeScheduled) * 100.0 
-                        : 0.0;
-                cumulativeRates.put(date, rate);
+private void drawSuccessRateChart(Graphics2D g2, int width, int height) {
+    Map<LocalDate, Double> cumulativeRates = new TreeMap<>();
+    int cumulativeSuccesses = 0;
+    int cumulativeScheduled = 0;
+    
+    // OPTION 1: Only include scheduled days in the graph
+    for (LocalDate date : data.keySet()) {
+        if (isScheduledDay(date)) {
+            cumulativeScheduled++;
+            if (data.get(date) > 0) {
+                cumulativeSuccesses++;
             }
             
-            double minValue = 0;
-            double maxValue = 100;
-            
-            double xScale = data.size() > 1 ? (double) (width - 2 * PADDING) / (data.size() - 1) : width - 2 * PADDING;
-            double yScale = (double) (height - 2 * PADDING) / (maxValue - minValue);
-            
-            drawAxes(g2, width, height);
-            drawYAxisLabels(g2, width, height, minValue, maxValue, true);
-            drawGoalLine(g2, width, height, 80.0, minValue, maxValue);
-            
-            List<LocalDate> dates = new ArrayList<>(cumulativeRates.keySet());
-            List<Point2D> points = new ArrayList<>();
-            
-            for (int i = 0; i < dates.size(); i++) {
-                LocalDate date = dates.get(i);
-                double rate = cumulativeRates.get(date);
-                
-                int x = PADDING + (int) (i * xScale);
-                int y = height - PADDING - (int) ((rate - minValue) * yScale);
-                points.add(new Point2D.Double(x, y));
-            }
-            
-            drawXAxisLabels(g2, dates, points, height);
-            drawLine(g2, points, CUMULATIVE_LINE_COLOR);
-            drawScheduledDayMarkers(g2, dates, points);
-            drawAxisLabel(g2, width, height, "Date", "Success Rate (%)");
+            // Calculate rate and add to graph ONLY for scheduled days
+            double rate = cumulativeScheduled > 0 
+                    ? (cumulativeSuccesses / (double) cumulativeScheduled) * 100.0 
+                    : 0.0;
+            cumulativeRates.put(date, rate);
         }
+    }
+    
+    // If no scheduled days, show message
+    if (cumulativeRates.isEmpty()) {
+        drawNoDataMessage(g2);
+        return;
+    }
+    
+    double minValue = 0;
+    double maxValue = 100;
+    
+    double xScale = cumulativeRates.size() > 1 
+            ? (double) (width - 2 * PADDING) / (cumulativeRates.size() - 1) 
+            : width - 2 * PADDING;
+    double yScale = (double) (height - 2 * PADDING) / (maxValue - minValue);
+    
+    drawAxes(g2, width, height);
+    drawYAxisLabels(g2, width, height, minValue, maxValue, true);
+    drawGoalLine(g2, width, height, 80.0, minValue, maxValue);
+    
+    List<LocalDate> dates = new ArrayList<>(cumulativeRates.keySet());
+    List<Point2D> points = new ArrayList<>();
+    
+    for (int i = 0; i < dates.size(); i++) {
+        LocalDate date = dates.get(i);
+        double rate = cumulativeRates.get(date);
+        
+        int x = PADDING + (int) (i * xScale);
+        int y = height - PADDING - (int) ((rate - minValue) * yScale);
+        points.add(new Point2D.Double(x, y));
+    }
+    
+    drawXAxisLabels(g2, dates, points, height);
+    drawLine(g2, points, CUMULATIVE_LINE_COLOR);
+    drawScheduledDayMarkers(g2, dates, points);
+    drawAxisLabel(g2, width, height, "Date", "Success Rate (%)");
+}
         
         private void drawScheduledDayMarkers(Graphics2D g2, List<LocalDate> dates, List<Point2D> points) {
             for (int i = 0; i < dates.size(); i++) {
