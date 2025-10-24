@@ -430,6 +430,7 @@ private void openStatisticsWindow(String habitName) {
             "Error",
             JOptionPane.ERROR_MESSAGE);
         });
+<<<<<<< HEAD
 
         // Add listener to the scroll pane to detect clicks outside the table
         jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -468,6 +469,8 @@ private void openStatisticsWindow(String habitName) {
                 }
             }
         });
+=======
+>>>>>>> parent of 3c9d693 (Squashed commit of the following:)
     }
 }
   private Map<LocalDate, Double> extractHabitDataAsMap(String habitName) {
