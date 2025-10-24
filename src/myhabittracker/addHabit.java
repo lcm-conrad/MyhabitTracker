@@ -15,38 +15,32 @@ public class addHabit extends javax.swing.JFrame {
     private YesNoJFrame YesNoWindow;
     private MeasurableJFrame setMeasurableWindow;
     private Reminder existingReminder;
-    private CustomTitleBar customTitleBar;
     private final DashboardHabit dashboard;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(addHabit.class.getName());
     private static final Color FRAME_COLOR = DashboardHabit.FRAME_COLOR;
     private static final Color BUTTON_COLOR = DashboardHabit.BUTTON_COLOR;
-
     /**
      * Creates new form OptionPanel
      *
      * @param dashboard
      */
     public addHabit(DashboardHabit dashboard) {
-        setUndecorated(true);
         initComponents();
-        this.dashboard = dashboard;
-        setMinimumSize(new java.awt.Dimension(420, 350)); // Add padding for borders
-        setSize(420, 350);
-        setLocationRelativeTo(null);
+        this.dashboard = dashboard;   // ✅ correctly link dashboard
+        setSize(getPreferredSize());   // use the size you set in Designer
+        setLocationRelativeTo(null);   // center on screen
         setResizable(false);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         applyColors();
-        customTitleBar = new CustomTitleBar(this, "MyHabitTracker", FRAME_COLOR);
-        customTitleBar.install();
     }
-
+    
     private void applyColors() {
         getContentPane().setBackground(FRAME_COLOR);
         jPanel1.setBackground(FRAME_COLOR);
         yesNobutton.setBackground(BUTTON_COLOR);
         measurableButton.setBackground(BUTTON_COLOR);
     }
-
+    
     public void openYesNoJFrame() {
         if (YesNoWindow == null || !YesNoWindow.isShowing()) {
             YesNoWindow = new YesNoJFrame(dashboard);

@@ -38,10 +38,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.RenderingHints;
 import java.awt.SystemTray;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -87,8 +84,11 @@ public class DashboardHabit extends javax.swing.JFrame {
     // Save timer for debouncing
     private Timer saveTimer;
 
-//Custom Title Bar  
-private CustomTitleBar customTitleBar;
+    // Mouse coordinates
+    private Point mouseDownCompCoords;
+
+//Title Panel
+    private JPanel titlePanel;
 
     // --- Data Storage ---
     private final Set<String> measurableHabits = new HashSet<>();
@@ -125,23 +125,86 @@ private CustomTitleBar customTitleBar;
         setupTrayMinimize();
 
         // Create custom title bar after initComponents
-    customTitleBar = new CustomTitleBar(this, "MyHabitTracker", FRAME_COLOR);
-    customTitleBar.install();
-        ResizableBorder.install(this);
-
-    }   
-
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
-                RenderingHints.VALUE_RENDER_QUALITY);
-        paintComponent(g);
+        createCustomTitleBar();
     }
 
+    private void createCustomTitleBar() {
+        // Create a custom title bar panel
+        titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(FRAME_COLOR);
+
+        // Set size and position
+        int titleBarHeight = 30;
+        titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
+
+        // Title label
+        JLabel titleLabel = new JLabel("   MyHabitTracker");
+        titleLabel.setFont(titleLabel.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+
+        // Button panel for minimize and close
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 5, 2));
+        buttonPanel.setBackground(FRAME_COLOR);
+
+        // Minimize button
+        JButton minimizeButton = new JButton("-");
+        minimizeButton.setBackground(FRAME_COLOR);
+        minimizeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+        minimizeButton.setFocusPainted(false);
+        minimizeButton.addActionListener(e -> setState(java.awt.Frame.ICONIFIED));
+
+        // Close button
+        JButton closeButton = new JButton("×");
+        closeButton.setBackground(FRAME_COLOR);
+        closeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+        closeButton.setFocusPainted(false);
+        closeButton.setFont(closeButton.getFont().deriveFont(16f));
+        closeButton.addActionListener(e -> {
+            // Trigger the window closing event
+            dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
+        });
+
+        buttonPanel.add(minimizeButton);
+        buttonPanel.add(closeButton);
+
+        titlePanel.add(titleLabel, BorderLayout.WEST);
+        titlePanel.add(buttonPanel, BorderLayout.EAST);
+
+        // Add mouse listener for dragging the window
+        titlePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mouseDownCompCoords = e.getPoint();
+            }
+        });
+
+        titlePanel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Point currCoords = e.getLocationOnScreen();
+                setLocation(currCoords.x - mouseDownCompCoords.x,
+                        currCoords.y - mouseDownCompCoords.y);
+            }
+        });
+
+        // Add title panel to the layered pane (on top of everything)
+        getLayeredPane().add(titlePanel, JLayeredPane.PALETTE_LAYER);
+
+        // Adjust content pane to make room for title bar
+        Container contentPane = getContentPane();
+        java.awt.Insets insets = contentPane.getInsets();
+        contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
+
+        // Add component listener to resize title bar when window is resized
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                if (titlePanel != null) {
+                    titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
+                    contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
+                }
+            }
+        });
+    }
 
     private void setupTrayMinimize() {
         // Change the default close operation to DO_NOTHING_ON_CLOSE
@@ -225,48 +288,28 @@ private CustomTitleBar customTitleBar;
         setTitle("MyHabitTracker");
         setLocationRelativeTo(null);
         getContentPane().setBackground(FRAME_COLOR);
-        setResizable(true); // Add this line
-
-        // Enable antialiasing
-        System.setProperty("awt.useSystemAAFontSettings", "on");
-        System.setProperty("swing.aatext", "true");
-
     }
 
     /**
      * Loads icons for the application. Note: Custom font is loaded via
      * FontLoader in the main method.
      */
-/**
- * Loads and scales an icon using Apache Batik for SVG support
- * Falls back to PNG if SVG is not available
- */
-private ImageIcon loadScaledIcon(String path, int targetWidth, int targetHeight) {
-    return BatikIconLoader.loadSvgIcon(path, targetWidth, targetHeight);
-}
+    private void loadIcons() {
+        try {
+            addCircleIcon = new ImageIcon(getClass().getResource("/resources/addcircle.png"));
+            editIcon = new ImageIcon(getClass().getResource("/resources/edit.png"));
+            xIcon = CheckboxIconGenerator.createEmptyCheckbox();
+            checkIcon = CheckboxIconGenerator.createFilledCheckbox();
+            deleteIcon = new ImageIcon(getClass().getResource("/resources/delete.png"));
 
-/**
- * Loads icons for the application using Apache Batik for high-quality rendering.
- */
-private void loadIcons() {
-    try {
-        // Load SVG icons with Batik
-        addCircleIcon = loadScaledIcon("/resources/addcircle.svg", 24, 24);
-        editIcon = loadScaledIcon("/resources/edit.svg", 24, 24);
-        deleteIcon = loadScaledIcon("/resources/delete.svg", 24, 24);
-
-        xIcon = CheckboxIconGenerator.createEmptyCheckbox();
-        checkIcon = CheckboxIconGenerator.createFilledCheckbox();
-
-        addHabit.setIcon(addCircleIcon);
-        EditButton.setIcon(editIcon);
-        DeleteButton.setIcon(deleteIcon);
-        
-        logger.info("SVG icons loaded successfully");
-    } catch (Exception e) {
-        logger.log(Level.SEVERE, "Failed to load icons.", e);
+            // Set icons on buttons
+            addHabit.setIcon(addCircleIcon);
+            EditButton.setIcon(editIcon);
+            DeleteButton.setIcon(deleteIcon);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to load icons.", e);
+        }
     }
-}
 
     /**
      * Sets up window position and size persistence across sessions.
