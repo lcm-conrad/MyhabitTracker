@@ -43,13 +43,12 @@ import java.awt.SystemTray;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
-import java.util.TreeMap;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import static myhabittracker.StatisticsProjection.parseDateFromHeader;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -527,13 +526,7 @@ private void setupTable() {
                 if (row < 0 || col < 0) {
                     jTable1.clearSelection();
                     return;
-                }
-
-                // Handle Double-click to Edit
-                if (e.getClickCount() == 2 && col == getHabitNameColumnIndex()) {
-                    jTable1.setRowSelectionInterval(row, row);
-                    EditButtonActionPerformed(null);
-                    return;
+          
                 }
 
                 // Handle Single-click for Yes/No Toggling

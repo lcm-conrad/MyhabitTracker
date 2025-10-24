@@ -427,7 +427,7 @@ public class StatisticsProjection extends javax.swing.JFrame {
             JOptionPane.ERROR_MESSAGE);
     }
     
-    private LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
+    public static LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return null;
         }
