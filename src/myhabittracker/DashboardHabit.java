@@ -342,14 +342,17 @@ public class DashboardHabit extends javax.swing.JFrame {
      * single-click toggle).
      */
     private void setupTableMouseListener() {
-         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseClicked(java.awt.event.MouseEvent e) {
-            int row = jTable1.rowAtPoint(e.getPoint());
-            int col = jTable1.columnAtPoint(e.getPoint());
-            if (row < 0) {
-                return;
-            }
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = jTable1.rowAtPoint(e.getPoint());
+                int col = jTable1.columnAtPoint(e.getPoint());
+
+                // If clicked outside the table bounds, clear selection
+                if (row < 0 || col < 0) {
+                    jTable1.clearSelection();
+                    return;
+                }
 
             String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
 
@@ -415,6 +418,37 @@ private void openStatisticsWindow(String habitName) {
             "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
             "Error",
             JOptionPane.ERROR_MESSAGE);
+        });
+
+        // Add listener to the scroll pane to detect clicks outside the table
+        jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                jTable1.clearSelection();
+            }
+        });
+
+        // Add click listener to the viewport (the area containing the table)
+        jScrollPane2.getViewport().addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                // Check if click is outside table bounds
+                if (jTable1.rowAtPoint(e.getPoint()) < 0) {
+                    jTable1.clearSelection();
+                }
+            }
+        });
+
+        // Also add listener to content pane for clicks completely outside scroll pane
+        getContentPane().addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                // If click is not on the table or scroll pane
+                if (!jScrollPane2.getBounds().contains(e.getPoint())) {
+                    jTable1.clearSelection();
+                }
+            }
+        });
     }
 }
   private Map<LocalDate, Double> extractHabitDataAsMap(String habitName) {
@@ -792,6 +826,13 @@ private void openStatisticsWindow(String habitName) {
 
                 model.removeRow(rowIndex);
             }
+
+            // Immediately save to Excel after deletion
+            if (saveTimer != null && saveTimer.isRunning()) {
+                saveTimer.stop();
+            }
+            saveHabitsToExcel();
+
             JOptionPane.showMessageDialog(this,
                     "The selected habits have been deleted.",
                     "Deletion Successful",
@@ -1139,6 +1180,7 @@ private void openStatisticsWindow(String habitName) {
 
         addHabit.setBackground(BUTTON_COLOR);
         addHabit.setText("Add");
+        addHabit.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         addHabit.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         addHabit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1148,6 +1190,7 @@ private void openStatisticsWindow(String habitName) {
 
         LockButton.setBackground(BUTTON_COLOR);
         LockButton.setText("Lock");
+        LockButton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         LockButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LockButtonActionPerformed(evt);
@@ -1172,6 +1215,7 @@ private void openStatisticsWindow(String habitName) {
 
         fileMenu.setBackground(BUTTON_COLOR);
         fileMenu.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Options", "Export", "Import"}));
+        fileMenu.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         fileMenu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 fileMenuActionPerformed(evt);
@@ -1180,6 +1224,7 @@ private void openStatisticsWindow(String habitName) {
 
         DeleteButton.setBackground(BUTTON_COLOR);
         DeleteButton.setText("Delete");
+        DeleteButton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         DeleteButton.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         DeleteButton.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         DeleteButton.addActionListener(new java.awt.event.ActionListener() {
@@ -1190,6 +1235,7 @@ private void openStatisticsWindow(String habitName) {
 
         EditButton.setBackground(BUTTON_COLOR);
         EditButton.setText("Edit");
+        EditButton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
         EditButton.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         EditButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1214,7 +1260,7 @@ private void openStatisticsWindow(String habitName) {
                         .addComponent(LockButton)
                         .addGap(18, 18, 18)
                         .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 651, Short.MAX_VALUE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1226,7 +1272,7 @@ private void openStatisticsWindow(String habitName) {
                     .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 225, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 222, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(addHabit)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
