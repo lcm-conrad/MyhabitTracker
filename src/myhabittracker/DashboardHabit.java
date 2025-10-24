@@ -345,6 +345,7 @@ private void loadIcons() {
      * Sets up debounced saving to prevent excessive Excel writes. Saves occur 2
      * seconds after the last table modification.
      */
+    
     private void setupDebouncedSave() {
         saveTimer = new Timer(SAVE_DELAY_MS, e -> saveHabitsToExcel());
         saveTimer.setRepeats(false);
@@ -485,28 +486,98 @@ private void loadIcons() {
                     return;
                 }
 
-                // Handle Double-click to Edit
-                if (e.getClickCount() == 2 && col == getHabitNameColumnIndex()) {
-                    jTable1.setRowSelectionInterval(row, row);
-                    EditButtonActionPerformed(null);
-                    return;
-                }
+            String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
 
-                // Handle Single-click for Yes/No Toggling
-                int firstDataCol = isSelectColumnVisible ? 2 : 1;
-                if (col < firstDataCol) {
-                    return;
-                }
+            // Handle Double-click - OPEN STATISTICS FOR ANY DOUBLE-CLICK ON THE HABIT ROW
+            if (e.getClickCount() == 2) {
+                // Double-click anywhere on the habit row opens statistics
+                jTable1.setRowSelectionInterval(row, row);
+                openStatisticsWindow(habitName);
+                return;
+            }
 
-                String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
-                if (!isMeasurableHabit(habitName)) {
-                    Object val = model.getValueAt(row, col);
-                    if (val instanceof Integer && (Integer) val == STATE_DONE) {
-                        return; // Don't toggle "Done" states
-                    }
-                    int state = (val instanceof Integer) ? (Integer) val : STATE_X;
-                    int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
-                    model.setValueAt(nextState, row, col);
+            // Handle Single-click for Yes/No Toggling (only for data columns)
+            int firstDataCol = isSelectColumnVisible ? 2 : 1;
+            if (col < firstDataCol) {
+                return; // Don't toggle for habit name or select columns
+            }
+
+            if (!isMeasurableHabit(habitName)) {
+                Object val = model.getValueAt(row, col);
+                if (val instanceof Integer && (Integer) val == STATE_DONE) {
+                    return; // Don't toggle "Done" states
+                }
+                int state = (val instanceof Integer) ? (Integer) val : STATE_X;
+                int nextState = (state == STATE_X) ? STATE_CHECK : STATE_X;
+                model.setValueAt(nextState, row, col);
+            }
+        }
+    });
+}
+    /**
+ * Opens the statistics window for the selected habit.
+ * 
+ * @param habitName The name of the habit to show statistics for
+ */
+private void openStatisticsWindow(String habitName) {
+        try {
+        boolean isMeasurable = isMeasurableHabit(habitName);
+        String unit = isMeasurable ? getHabitUnit(habitName) : "";
+        
+        // Extract the habit data as Map<LocalDate, Double>
+        Map<LocalDate, Double> habitData = extractHabitDataAsMap(habitName);
+        
+        // Debug output
+        System.out.println("=== DEBUG: Opening Statistics ===");
+        System.out.println("Habit: " + habitName);
+        System.out.println("Is Measurable: " + isMeasurable);
+        System.out.println("Unit: " + unit);
+        System.out.println("Data points extracted: " + habitData.size());
+        if (!habitData.isEmpty()) {
+            System.out.println("Sample data: " + habitData.entrySet().iterator().next());
+        }
+        System.out.println("=== END DEBUG ===");
+        
+        // Create and display statistics window with the data
+        StatisticsProjection statsWindow = new StatisticsProjection(habitName, isMeasurable, unit, habitData);
+        statsWindow.setVisible(true);
+        statsWindow.toFront();
+        statsWindow.requestFocus();
+        
+    } catch (Exception ex) {
+        logger.log(Level.SEVERE, "Error opening statistics window for habit: " + habitName, ex);
+        JOptionPane.showMessageDialog(this,
+            "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+        });
+
+        // Add listener to the scroll pane to detect clicks outside the table
+        jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                jTable1.clearSelection();
+            }
+        });
+
+        // Add click listener to the viewport (the area containing the table)
+        jScrollPane2.getViewport().addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                // Check if click is outside table bounds
+                if (jTable1.rowAtPoint(e.getPoint()) < 0) {
+                    jTable1.clearSelection();
+                }
+            }
+        });
+
+        // Also add listener to content pane for clicks completely outside scroll pane
+        getContentPane().addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                // If click is not on the table or scroll pane
+                if (!jScrollPane2.getBounds().contains(e.getPoint())) {
+                    jTable1.clearSelection();
                 }
             }
         });
@@ -541,7 +612,109 @@ private void loadIcons() {
             }
         });
     }
-
+}
+  private Map<LocalDate, Double> extractHabitDataAsMap(String habitName) {
+    Map<LocalDate, Double> habitData = new TreeMap<>();
+    
+    // Find the row for this habit
+    int habitColIdx = getHabitNameColumnIndex();
+    int rowIndex = -1;
+    
+    for (int i = 0; i < model.getRowCount(); i++) {
+        if (habitName.equals(model.getValueAt(i, habitColIdx))) {
+            rowIndex = i;
+            break;
+        }
+    }
+    
+    if (rowIndex == -1) {
+        logger.warning("Habit not found in table: " + habitName);
+        return habitData;
+    }
+    
+    // Extract data for each date column
+    int firstDataCol = habitColIdx + 1;
+    LocalDate today = LocalDate.now();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+    
+    for (int col = firstDataCol; col < model.getColumnCount(); col++) {
+        String dateStr = model.getColumnName(col);
+        Object value = model.getValueAt(rowIndex, col);
+        
+        // Parse the date string to LocalDate
+        LocalDate date = parseDateFromHeader(dateStr, today);
+        if (date == null) {
+            continue;
+        }
+        
+        // Convert the value to double
+        double doubleValue = 0.0;
+        if (isMeasurableHabit(habitName)) {
+            if (value instanceof String) {
+                String strValue = (String) value;
+                // Extract number from string (e.g., "0 unit" -> 0.0)
+                try {
+                    strValue = strValue.replaceAll("[^0-9.]", "").trim();
+                    doubleValue = strValue.isEmpty() ? 0.0 : Double.parseDouble(strValue);
+                } catch (NumberFormatException e) {
+                    doubleValue = 0.0;
+                }
+            }
+        } else {
+            // For yes/no habits, we map STATE_CHECK (1) to 1.0, and others to 0.0
+            if (value instanceof Integer) {
+                int intValue = (Integer) value;
+                doubleValue = (intValue == STATE_CHECK) ? 1.0 : 0.0;
+            }
+        }
+        
+        habitData.put(date, doubleValue);
+    }
+    
+    return habitData;
+}  
+   private LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
+     if (dateStr == null || dateStr.trim().isEmpty()) {
+        return null;
+    }
+    
+    try {
+        // Remove any extra spaces and ensure proper format
+        dateStr = dateStr.trim();
+        
+        // Try parsing with current year first
+        String dateWithYear = dateStr + " " + today.getYear();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd yyyy");
+        
+        try {
+            LocalDate date = LocalDate.parse(dateWithYear, formatter);
+            
+            // If the parsed date is in the future, use previous year
+            if (date.isAfter(today)) {
+                date = date.minusYears(1);
+            }
+            return date;
+        } catch (Exception e) {
+            // If that fails, try with day of month without leading zero
+            try {
+                dateWithYear = dateStr.replace("  ", " ") + " " + today.getYear();
+                formatter = DateTimeFormatter.ofPattern("MMM d yyyy");
+                LocalDate date = LocalDate.parse(dateWithYear, formatter);
+                
+                if (date.isAfter(today)) {
+                    date = date.minusYears(1);
+                }
+                return date;
+            } catch (Exception e2) {
+                System.out.println("Failed to parse date: " + dateStr);
+                return null;
+            }
+        }
+    } catch (Exception e) {
+        System.out.println("Error parsing date: " + dateStr + " - " + e.getMessage());
+        return null;
+    }
+}
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
     /**
      * Gets the current column index for the "Habit" name column, accounting for
