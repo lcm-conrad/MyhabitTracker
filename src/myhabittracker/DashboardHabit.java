@@ -12,9 +12,7 @@ import java.time.LocalTime;
 import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
 import java.util.EventObject;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -49,7 +47,8 @@ import javax.swing.JPanel;
 import java.util.TreeMap;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import static myhabittracker.StatisticsProjection.parseDateFromHeader;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Main dashboard for MyHabitTracker application. Displays habits in a table
@@ -76,7 +75,6 @@ public class DashboardHabit extends javax.swing.JFrame {
 
     // Window references
     private addHabit habitWindow;
-    private PinPasswordHabit pinWindow;
 
     // Table model
     private DefaultTableModel model;
@@ -113,101 +111,221 @@ public class DashboardHabit extends javax.swing.JFrame {
     private static final int STATE_CHECK = 1;
     private static final int STATE_DONE = 2; // Represents a day off for weekly habits
 
-    public DashboardHabit() {
-        setUndecorated(true);
+    // Resize state variables
+private static final int BORDER_DRAG_THICKNESS = 8;
+private int cursor;
+private Point startPos = null;
+    
+public DashboardHabit() {
+    setUndecorated(true);
+    initComponents();
+    setupFrame();
+    loadIcons();
+    setupWindowPersistence();
+    setupTable();
+    setupTableHeaderRenderer();
+    addNavigationPanel();
+    loadHabitsFromExcel();
+    ReminderManager.getInstance().setDashboard(this);
+    setupTrayMinimize();
+    createCustomTitleBar();
+    
+    // ADD THIS LINE - Use ComponentMover for both dragging and resizing
+    ComponentResizer cr = new ComponentResizer();
+    cr.registerComponent(this);
+    cr.setSnapSize(new java.awt.Dimension(10, 10));
+    cr.setMinimumSize(new java.awt.Dimension(900, 500));
+    
+    setSize(900, 500);
+    setMinimumSize(new java.awt.Dimension(900, 500));
+}
 
-        initComponents();
-        setupFrame();
-        loadIcons();
-        setupWindowPersistence();
-        setupTable();
-        setupTableHeaderRenderer();
-        loadHabitsFromExcel();  // Load data after table is fully configured
+private void enableResizing() {
+    addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            startPos = e.getPoint();
+            updateCursor(e);
+        }
 
-        ReminderManager.getInstance().setDashboard(this);
-        setupTrayMinimize();
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            startPos = null;
+            cursor = java.awt.Cursor.DEFAULT_CURSOR;
+            setCursor(java.awt.Cursor.getPredefinedCursor(cursor));
+        }
+    });
 
-        // Create custom title bar after initComponents
-        createCustomTitleBar();
-    }
+    addMouseMotionListener(new MouseMotionAdapter() {
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            updateCursor(e);
+        }
 
-    private void createCustomTitleBar() {
-        // Create a custom title bar panel
-        titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBackground(FRAME_COLOR);
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            if (startPos != null && cursor != java.awt.Cursor.DEFAULT_CURSOR) {
+                int x = getX();
+                int y = getY();
+                int w = getWidth();
+                int h = getHeight();
 
-        // Set size and position
-        int titleBarHeight = 30;
-        titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
+                int dx = e.getX() - startPos.x;
+                int dy = e.getY() - startPos.y;
 
-        // Title label
-        JLabel titleLabel = new JLabel("   MyHabitTracker");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(java.awt.Font.BOLD, 14f));
-
-        // Button panel for minimize and close
-        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 5, 2));
-        buttonPanel.setBackground(FRAME_COLOR);
-
-        // Minimize button
-        JButton minimizeButton = new JButton("-");
-        minimizeButton.setBackground(FRAME_COLOR);
-        minimizeButton.setPreferredSize(new java.awt.Dimension(45, 26));
-        minimizeButton.setFocusPainted(false);
-        minimizeButton.addActionListener(e -> setState(java.awt.Frame.ICONIFIED));
-
-        // Close button
-        JButton closeButton = new JButton("×");
-        closeButton.setBackground(FRAME_COLOR);
-        closeButton.setPreferredSize(new java.awt.Dimension(45, 26));
-        closeButton.setFocusPainted(false);
-        closeButton.setFont(closeButton.getFont().deriveFont(16f));
-        closeButton.addActionListener(e -> {
-            // Trigger the window closing event
-            dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
-        });
-
-        buttonPanel.add(minimizeButton);
-        buttonPanel.add(closeButton);
-
-        titlePanel.add(titleLabel, BorderLayout.WEST);
-        titlePanel.add(buttonPanel, BorderLayout.EAST);
-
-        // Add mouse listener for dragging the window
-        titlePanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                mouseDownCompCoords = e.getPoint();
-            }
-        });
-
-        titlePanel.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                Point currCoords = e.getLocationOnScreen();
-                setLocation(currCoords.x - mouseDownCompCoords.x,
-                        currCoords.y - mouseDownCompCoords.y);
-            }
-        });
-
-        // Add title panel to the layered pane (on top of everything)
-        getLayeredPane().add(titlePanel, JLayeredPane.PALETTE_LAYER);
-
-        // Adjust content pane to make room for title bar
-        Container contentPane = getContentPane();
-        java.awt.Insets insets = contentPane.getInsets();
-        contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
-
-        // Add component listener to resize title bar when window is resized
-        addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override
-            public void componentResized(java.awt.event.ComponentEvent e) {
-                if (titlePanel != null) {
-                    titlePanel.setBounds(0, 0, getWidth(), titleBarHeight);
-                    contentPane.setBounds(0, titleBarHeight, getWidth(), getHeight() - titleBarHeight);
+                switch (cursor) {
+                    case java.awt.Cursor.N_RESIZE_CURSOR:
+                        setBounds(x, y + dy, w, h - dy);
+                        break;
+                    case java.awt.Cursor.S_RESIZE_CURSOR:
+                        setSize(w, h + dy);
+                        startPos = e.getPoint();
+                        break;
+                    case java.awt.Cursor.W_RESIZE_CURSOR:
+                        setBounds(x + dx, y, w - dx, h);
+                        break;
+                    case java.awt.Cursor.E_RESIZE_CURSOR:
+                        setSize(w + dx, h);
+                        startPos = e.getPoint();
+                        break;
+                    case java.awt.Cursor.NW_RESIZE_CURSOR:
+                        setBounds(x + dx, y + dy, w - dx, h - dy);
+                        break;
+                    case java.awt.Cursor.NE_RESIZE_CURSOR:
+                        setBounds(x, y + dy, w + dx, h - dy);
+                        startPos = new Point(e.getX(), startPos.y);
+                        break;
+                    case java.awt.Cursor.SW_RESIZE_CURSOR:
+                        setBounds(x + dx, y, w - dx, h + dy);
+                        startPos = new Point(startPos.x, e.getY());
+                        break;
+                    case java.awt.Cursor.SE_RESIZE_CURSOR:
+                        setSize(w + dx, h + dy);
+                        startPos = e.getPoint();
+                        break;
+                }
+                
+                // Enforce minimum size
+                if (getWidth() < getMinimumSize().width) {
+                    setSize(getMinimumSize().width, getHeight());
+                }
+                if (getHeight() < getMinimumSize().height) {
+                    setSize(getWidth(), getMinimumSize().height);
                 }
             }
-        });
+        }
+    });
+}
+
+/**
+ * Updates cursor based on mouse position for resizing.
+ */
+private void updateCursor(MouseEvent e) {
+    int x = e.getX();
+    int y = e.getY();
+    
+    if (x < BORDER_DRAG_THICKNESS && y < BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.NW_RESIZE_CURSOR;
+    } else if (x < BORDER_DRAG_THICKNESS && y > getHeight() - BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.SW_RESIZE_CURSOR;
+    } else if (x > getWidth() - BORDER_DRAG_THICKNESS && y < BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.NE_RESIZE_CURSOR;
+    } else if (x > getWidth() - BORDER_DRAG_THICKNESS && y > getHeight() - BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.SE_RESIZE_CURSOR;
+    } else if (x < BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.W_RESIZE_CURSOR;
+    } else if (x > getWidth() - BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.E_RESIZE_CURSOR;
+    } else if (y < BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.N_RESIZE_CURSOR;
+    } else if (y > getHeight() - BORDER_DRAG_THICKNESS) {
+        cursor = java.awt.Cursor.S_RESIZE_CURSOR;
+    } else {
+        cursor = java.awt.Cursor.DEFAULT_CURSOR;
     }
+    
+    setCursor(java.awt.Cursor.getPredefinedCursor(cursor));
+}
+
+private void createCustomTitleBar() {
+    final int TITLE_BAR_HEIGHT = 30;
+    
+    // Create a custom title bar panel
+    titlePanel = new JPanel(new BorderLayout());
+    titlePanel.setBackground(FRAME_COLOR);
+    titlePanel.setBounds(0, 0, getWidth(), TITLE_BAR_HEIGHT);
+
+    // Title label
+    JLabel titleLabel = new JLabel("   MyHabitTracker");
+    titleLabel.setFont(titleLabel.getFont().deriveFont(java.awt.Font.BOLD, 14f));
+
+    // Button panel for minimize and close
+    JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 5, 2));
+    buttonPanel.setBackground(FRAME_COLOR);
+
+    // Minimize button
+    JButton minimizeButton = new JButton("-");
+    minimizeButton.setBackground(FRAME_COLOR);
+    minimizeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+    minimizeButton.setFocusPainted(false);
+    minimizeButton.addActionListener(e -> setState(java.awt.Frame.ICONIFIED));
+
+    // Close button
+    JButton closeButton = new JButton("×");
+    closeButton.setBackground(FRAME_COLOR);
+    closeButton.setPreferredSize(new java.awt.Dimension(45, 26));
+    closeButton.setFocusPainted(false);
+    closeButton.setFont(closeButton.getFont().deriveFont(16f));
+    closeButton.addActionListener(e -> {
+        dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
+    });
+
+    buttonPanel.add(minimizeButton);
+    buttonPanel.add(closeButton);
+
+    titlePanel.add(titleLabel, BorderLayout.WEST);
+    titlePanel.add(buttonPanel, BorderLayout.EAST);
+
+    // Add mouse listener for dragging
+    titlePanel.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            mouseDownCompCoords = e.getPoint();
+        }
+    });
+
+    titlePanel.addMouseMotionListener(new MouseMotionAdapter() {
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            Point currCoords = e.getLocationOnScreen();
+            setLocation(currCoords.x - mouseDownCompCoords.x,
+                    currCoords.y - mouseDownCompCoords.y);
+        }
+    });
+
+    // Add to layered pane
+    getLayeredPane().add(titlePanel, JLayeredPane.PALETTE_LAYER);
+
+    // Adjust content pane with proper insets
+    Container contentPane = getContentPane();
+    java.awt.Insets currentInsets = contentPane.getInsets();
+    
+    // Create proper layout with title bar spacing
+    javax.swing.border.EmptyBorder border = new javax.swing.border.EmptyBorder(
+        TITLE_BAR_HEIGHT + 5, 5, 5, 5
+    );
+    ((JPanel) contentPane).setBorder(border);
+
+    // Add component listener for resizing
+    addComponentListener(new java.awt.event.ComponentAdapter() {
+        @Override
+        public void componentResized(java.awt.event.ComponentEvent e) {
+            if (titlePanel != null) {
+                titlePanel.setBounds(0, 0, getWidth(), TITLE_BAR_HEIGHT);
+            }
+        }
+    });
+}
 
     private void setupTrayMinimize() {
         // Change the default close operation to DO_NOTHING_ON_CLOSE
@@ -340,16 +458,105 @@ public class DashboardHabit extends javax.swing.JFrame {
     }
 
     /**
-     * Initializes the habits table with column headers and cell renderers.
+     * Rebuilds the GroupLayout to include the wrapper panel. This replaces
+     * jScrollPane2 with the wrapper in the layout.
+     */
+private void addNavigationPanel() {
+    
+    // Get the parent panel that contains jScrollPane2
+    Container contentPane = getContentPane();
+    
+    // Create a wrapper panel with BorderLayout
+    JPanel wrapper = new JPanel(new BorderLayout());
+    wrapper.setBackground(FRAME_COLOR);
+    
+    // Find jScrollPane2's constraints and position
+    javax.swing.GroupLayout layout = (javax.swing.GroupLayout) contentPane.getLayout();
+    
+    // Remove jScrollPane2 from content pane
+    contentPane.remove(jScrollPane2);
+    
+    // Add jScrollPane2 and navigation to wrapper
+    wrapper.add(jScrollPane2, BorderLayout.CENTER);
+    
+    // Add wrapper back to content pane
+    contentPane.add(wrapper);
+    
+    // Re-create the layout with wrapper instead of jScrollPane2
+    rebuildLayout(wrapper);
+    
+    // Refresh the display
+    contentPane.revalidate();
+    contentPane.repaint();
+}
+
+/**
+ * Rebuilds the GroupLayout to include the wrapper panel.
+ * This replaces jScrollPane2 with the wrapper in the layout.
+ */
+private void rebuildLayout(JPanel wrapper) {
+    Container contentPane = getContentPane();
+    javax.swing.GroupLayout layout = new javax.swing.GroupLayout(contentPane);
+    contentPane.setLayout(layout);
+    
+    layout.setHorizontalGroup(
+        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGroup(layout.createSequentialGroup()
+            .addContainerGap()
+            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addComponent(addHabit, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
+                .addComponent(EditButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(DeleteButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(0, 500, Short.MAX_VALUE)
+                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(wrapper, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap())
+    );
+    
+    layout.setVerticalGroup(
+        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGroup(layout.createSequentialGroup()
+            .addContainerGap()
+            .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addComponent(wrapper, javax.swing.GroupLayout.DEFAULT_SIZE, 450, Short.MAX_VALUE)
+                .addGroup(layout.createSequentialGroup()
+                    .addComponent(addHabit, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(EditButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(DeleteButton, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGap(0, 0, Short.MAX_VALUE)))
+            .addContainerGap())
+    );
+}
+    /**
+     * Modified setupTable() - shows entire month but only 7 days visible at a
+     * time.
      */
 private void setupTable() {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-    String[] columnNames = new String[31];  // 1 + 30 days
-    columnNames[0] = "Habit";
-    LocalDate today = LocalDate.now();
     
-    for (int i = 0; i < 30; i++) {
-        columnNames[i + 1] = today.minusDays(i).format(formatter);
+    // Get all days of the current month
+    LocalDate today = LocalDate.now();
+    LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+    int daysInMonth = today.lengthOfMonth();
+    
+    // Create columns: Habit name + all days of the month
+    String[] columnNames = new String[daysInMonth + 1];
+    columnNames[0] = "Habit";
+    
+    // Add all days of the month as columns (from today going backwards)
+    int colIndex = 1;
+    for (int i = 0; i < daysInMonth; i++) {
+        LocalDate date = today.minusDays(i);
+        if (!date.isBefore(firstDayOfMonth)) {
+            columnNames[colIndex++] = date.format(formatter);
+        }
     }
  
     model = new DefaultTableModel(new Object[][]{}, columnNames) {
@@ -378,6 +585,30 @@ private void setupTable() {
     jTable1.setRowHeight(40);
     jTable1.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     jTable1.getTableHeader().setReorderingAllowed(false);
+    
+    // KEY: Disable auto-resize to enable horizontal scrolling
+    jTable1.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+    
+    // Set fixed width for Habit name column
+    jTable1.getColumnModel().getColumn(0).setPreferredWidth(150);
+    jTable1.getColumnModel().getColumn(0).setMinWidth(150);
+    jTable1.getColumnModel().getColumn(0).setMaxWidth(150);
+    
+    // Set fixed width for each date column (100px each)
+    int dateColumnWidth = 100;
+    for (int i = 1; i < model.getColumnCount(); i++) {
+        jTable1.getColumnModel().getColumn(i).setPreferredWidth(dateColumnWidth);
+        jTable1.getColumnModel().getColumn(i).setMinWidth(dateColumnWidth);
+        jTable1.getColumnModel().getColumn(i).setMaxWidth(dateColumnWidth);
+    }
+    
+    // Configure scroll pane
+    jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+    jScrollPane2.getHorizontalScrollBar().setUnitIncrement(dateColumnWidth);
+    jScrollPane2.getHorizontalScrollBar().setBlockIncrement(dateColumnWidth * 7);
+    
+    // Add scrolling enhancements
+    setupWeekScrolling();
 
     setupDebouncedSave();
     setupTableRenderer();
@@ -385,6 +616,48 @@ private void setupTable() {
     setupTableMouseListener();
 }
 
+    /**
+     * Sets up week-by-week scrolling controls and enhancements.
+     */
+    /**
+     * Sets up enhanced scrolling behavior.
+     */
+private void setupWeekScrolling() {
+    int dateColumnWidth = 100;
+    
+    // Shift + Mouse Wheel = horizontal scroll
+    jScrollPane2.addMouseWheelListener(e -> {
+        if (e.isShiftDown()) {
+            javax.swing.JScrollBar hBar = jScrollPane2.getHorizontalScrollBar();
+            int rotation = e.getWheelRotation();
+            hBar.setValue(hBar.getValue() + (rotation * dateColumnWidth));
+        }
+    });
+}
+
+    /**
+     * Creates the week navigation panel.
+     */
+
+/**
+ * Rebuilds the GroupLayout to include the wrapper panel.
+ * This replaces jScrollPane2 with the wrapper in the layout.
+ */
+
+
+
+
+
+    /**
+     * Alternative: Add scroll controls as a separate panel below the table.
+     * Call this method in your constructor after initComponents().
+     */
+    /**
+     * Creates a navigation panel with week scrolling buttons. Call this method
+     * in your constructor after initComponents().
+     *
+     * @return JPanel with navigation controls
+     */
     /**
      * Sets up debounced saving to prevent excessive Excel writes. Saves occur 2
      * seconds after the last table modification.
@@ -528,7 +801,7 @@ private void setupTable() {
                     jTable1.clearSelection();
                     return;
                 }
-          
+
                 String habitName = (String) jTable1.getValueAt(row, getHabitNameColumnIndex());
 
                 // Handle Double-click - OPEN STATISTICS FOR ANY DOUBLE-CLICK ON THE HABIT ROW
@@ -556,7 +829,7 @@ private void setupTable() {
                 }
             }
         });
-        
+
         jScrollPane2.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -582,19 +855,19 @@ private void setupTable() {
             }
         });
     }
-    
+
     /**
      * Opens the statistics window for the selected habit.
-     * 
+     *
      * @param habitName The name of the habit to show statistics for
      */
     private void openStatisticsWindow(String habitName) {
         try {
             boolean isMeasurable = isMeasurableHabit(habitName);
             String unit = isMeasurable ? getHabitUnit(habitName) : "";
-            
+
             Map<LocalDate, Double> habitData = extractHabitDataAsMap(habitName);
-            
+
             // Debug output
             System.out.println("=== DEBUG: Opening Statistics ===");
             System.out.println("Habit: " + habitName);
@@ -605,56 +878,56 @@ private void setupTable() {
                 System.out.println("Sample data: " + habitData.entrySet().iterator().next());
             }
             System.out.println("=== END DEBUG ===");
-            
+
             // Create and display statistics window with the data
             StatisticsProjection statsWindow = new StatisticsProjection(habitName, isMeasurable, unit, habitData);
             statsWindow.setVisible(true);
             statsWindow.toFront();
             statsWindow.requestFocus();
-            
+
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error opening statistics window for habit: " + habitName, ex);
             JOptionPane.showMessageDialog(this,
-                "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Unable to open statistics for habit: " + habitName + "\nError: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private Map<LocalDate, Double> extractHabitDataAsMap(String habitName) {
         Map<LocalDate, Double> habitData = new TreeMap<>();
-        
+
         // Find the row for this habit
         int habitColIdx = getHabitNameColumnIndex();
         int rowIndex = -1;
-        
+
         for (int i = 0; i < model.getRowCount(); i++) {
             if (habitName.equals(model.getValueAt(i, habitColIdx))) {
                 rowIndex = i;
                 break;
             }
         }
-        
+
         if (rowIndex == -1) {
             logger.warning("Habit not found in table: " + habitName);
             return habitData;
         }
-        
+
         // Extract data for each date column
         int firstDataCol = habitColIdx + 1;
         LocalDate today = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-        
+
         for (int col = firstDataCol; col < model.getColumnCount(); col++) {
             String dateStr = model.getColumnName(col);
             Object value = model.getValueAt(rowIndex, col);
-            
+
             // Parse the date string to LocalDate
             LocalDate date = parseDateFromHeader(dateStr, today);
             if (date == null) {
                 continue;
             }
-            
+
             // Convert the value to double
             double doubleValue = 0.0;
             if (isMeasurableHabit(habitName)) {
@@ -675,29 +948,29 @@ private void setupTable() {
                     doubleValue = (intValue == STATE_CHECK) ? 1.0 : 0.0;
                 }
             }
-            
+
             habitData.put(date, doubleValue);
         }
-        
+
         return habitData;
     }
-    
+
     private LocalDate parseDateFromHeader(String dateStr, LocalDate today) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return null;
         }
-        
+
         try {
             // Remove any extra spaces and ensure proper format
             dateStr = dateStr.trim();
-            
+
             // Try parsing with current year first
             String dateWithYear = dateStr + " " + today.getYear();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd yyyy");
-            
+
             try {
                 LocalDate date = LocalDate.parse(dateWithYear, formatter);
-                
+
                 // If the parsed date is in the future, use previous year
                 if (date.isAfter(today)) {
                     date = date.minusYears(1);
@@ -709,7 +982,7 @@ private void setupTable() {
                     dateWithYear = dateStr.replace("  ", " ") + " " + today.getYear();
                     formatter = DateTimeFormatter.ofPattern("MMM d yyyy");
                     LocalDate date = LocalDate.parse(dateWithYear, formatter);
-                    
+
                     if (date.isAfter(today)) {
                         date = date.minusYears(1);
                     }
@@ -724,7 +997,7 @@ private void setupTable() {
             return null;
         }
     }
-    
+
     //<editor-fold defaultstate="collapsed" desc="Helper and Utility Methods">
     /**
      * Gets the current column index for the "Habit" name column, accounting for
@@ -801,9 +1074,13 @@ private void setupTable() {
      * @param daysOfWeek The days of the week for reminders
      * @param notes Additional notes about the habit
      */
+    /**
+     * Enhanced version of addHabitRow that handles variable column count.
+     */
     public void addHabitRow(String habitName, String question, String unit, double target,
             String threshold, Reminder.Frequency frequency, Set<DayOfWeek> daysOfWeek, String notes) {
-        // 1. Store metadata
+
+        // Store metadata
         if (unit != null && !unit.trim().isEmpty()) {
             measurableHabits.add(habitName);
             habitUnits.put(habitName, unit);
@@ -814,7 +1091,7 @@ private void setupTable() {
         }
         habitNotes.put(habitName, notes == null ? "" : notes);
 
-        // 2. Create and store Reminder metadata
+        // Create and store Reminder metadata
         Reminder reminderData = new Reminder();
         reminderData.setName(habitName);
         reminderData.setText(question);
@@ -832,7 +1109,7 @@ private void setupTable() {
         }
         habitReminders.put(habitName, reminderData);
 
-        // 3. Prepare row data for the table
+        // Prepare row data for the full month
         Object[] row = new Object[model.getColumnCount()];
         int habitColIdx = getHabitNameColumnIndex();
         int firstDataCol = habitColIdx + 1;
@@ -842,23 +1119,29 @@ private void setupTable() {
         }
         row[habitColIdx] = habitName;
 
-        // 4. Initialize daily data columns
+        // Initialize data for ALL days of the month
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+
         if (isMeasurableHabit(habitName)) {
+            // Measurable habit: fill all columns with "0 unit"
             for (int i = firstDataCol; i < row.length; i++) {
                 row[i] = "0 " + unit;
             }
         } else {
-            LocalDate today = LocalDate.now();
+            // Yes/No habit: fill based on frequency and day of week
             for (int i = firstDataCol; i < row.length; i++) {
                 LocalDate date = today.minusDays(i - firstDataCol);
+
                 if (frequency == Reminder.Frequency.WEEKLY && daysOfWeek != null
                         && !daysOfWeek.contains(date.getDayOfWeek())) {
-                    row[i] = STATE_DONE;
+                    row[i] = STATE_DONE; // Off day for weekly habits
                 } else {
-                    row[i] = STATE_X;
+                    row[i] = STATE_X; // Default unchecked state
                 }
             }
         }
+
         model.addRow(row);
     }
 
@@ -1103,17 +1386,17 @@ private void setupTable() {
      */
     private void saveHabitData(Workbook workbook) {
         Sheet dataSheet = workbook.createSheet(SHEET_DATA);
-        
+
         LocalDate today = LocalDate.now();
         LocalDate firstDayOfMonth = today.withDayOfMonth(1);
         int daysInMonth = today.lengthOfMonth();
-        
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
-        
+
         // Create header row with ALL days of the month
         Row dataHeader = dataSheet.createRow(0);
         dataHeader.createCell(0).setCellValue("Habit");
-        
+
         // Add columns for every day of the month
         for (int i = 0; i < daysInMonth; i++) {
             LocalDate date = today.minusDays(i);
@@ -1122,26 +1405,26 @@ private void setupTable() {
                 dataHeader.createCell(i + 1).setCellValue(date.format(formatter));
             }
         }
-        
+
         // Save habit rows
         for (int rowIdx = 0; rowIdx < model.getRowCount(); rowIdx++) {
             Row dataRow = dataSheet.createRow(rowIdx + 1);
             String habitName = (String) model.getValueAt(rowIdx, getHabitNameColumnIndex());
             dataRow.createCell(0).setCellValue(habitName);
-            
+
             // Map table columns to Excel columns by date
             int firstDataCol = getHabitNameColumnIndex() + 1;
             for (int col = firstDataCol; col < model.getColumnCount(); col++) {
                 String tableDateStr = model.getColumnName(col);
                 LocalDate tableDate = parseDateFromHeader(tableDateStr, today);
-                
+
                 if (tableDate != null) {
                     // Find corresponding Excel column for this date
                     int excelCol = (int) java.time.temporal.ChronoUnit.DAYS.between(tableDate, today) + 1;
-                    
+
                     Object value = model.getValueAt(rowIdx, col);
                     Cell cell = dataRow.createCell(excelCol);
-                    
+
                     if (value instanceof String s) {
                         cell.setCellValue(s);
                     } else if (value instanceof Integer i) {
@@ -1151,7 +1434,7 @@ private void setupTable() {
                     }
                 }
             }
-            
+
             // Fill in missing days with default values
             for (int day = 0; day < daysInMonth; day++) {
                 LocalDate date = today.minusDays(day);
@@ -1169,7 +1452,7 @@ private void setupTable() {
             }
         }
     }
-    
+
     /**
      * Loads all habit data from the Excel file in the user's home directory.
      */
@@ -1365,7 +1648,6 @@ private void setupTable() {
         jMenu2 = new javax.swing.JMenu();
         jPopupMenu1 = new javax.swing.JPopupMenu();
         addHabit = new javax.swing.JButton();
-        LockButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         fileMenu = new javax.swing.JComboBox<>();
@@ -1389,15 +1671,6 @@ private void setupTable() {
         addHabit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addHabitActionPerformed(evt);
-            }
-        });
-
-        LockButton.setBackground(BUTTON_COLOR);
-        LockButton.setText("Lock");
-        LockButton.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 5, true));
-        LockButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LockButtonActionPerformed(evt);
             }
         });
 
@@ -1461,8 +1734,6 @@ private void setupTable() {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(LockButton)
-                        .addGap(18, 18, 18)
                         .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE))
                 .addContainerGap())
@@ -1471,9 +1742,7 @@ private void setupTable() {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(24, 24, 24)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(LockButton)
-                    .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(fileMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 222, Short.MAX_VALUE)
@@ -1501,22 +1770,10 @@ private void setupTable() {
         }
     }//GEN-LAST:event_addHabitActionPerformed
 
-    private void LockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LockButtonActionPerformed
-        // TODO add your handling code here:
-        // Open the PinPasswordHabit window
-        if (pinWindow == null || !pinWindow.isShowing()) {
-            pinWindow = new PinPasswordHabit();
-            pinWindow.setVisible(true);
-        } else {
-            pinWindow.toFront();
-            pinWindow.requestFocus();
-        }
-    }//GEN-LAST:event_LockButtonActionPerformed
-
     private void fileMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileMenuActionPerformed
         // TODO add your handling code here:
         String selected = (String) fileMenu.getSelectedItem();
-    
+
         switch (selected) {
             case "Export" -> {
                 exportHabits();
@@ -1531,35 +1788,35 @@ private void setupTable() {
             }
         }
     }//GEN-LAST:event_fileMenuActionPerformed
-    
+
     /**
-     * Exports all habits to a user-selected Excel file.
-     * Creates a complete backup of all habit data, metadata, and reminders.
+     * Exports all habits to a user-selected Excel file. Creates a complete
+     * backup of all habit data, metadata, and reminders.
      */
     private void exportHabits() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Export Habits");
-        
+
         // Set default file name with timestamp
         String timestamp = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         fileChooser.setSelectedFile(new File("MyHabitTracker_Export_" + timestamp + ".xlsx"));
-        
+
         // Only allow .xlsx files
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "Excel Files (*.xlsx)", "xlsx");
         fileChooser.setFileFilter(filter);
-        
+
         int userSelection = fileChooser.showSaveDialog(this);
-        
+
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-            
+
             // Ensure .xlsx extension
             if (!fileToSave.getName().toLowerCase().endsWith(".xlsx")) {
                 fileToSave = new File(fileToSave.getAbsolutePath() + ".xlsx");
             }
-            
+
             // Check if file exists and confirm overwrite
             if (fileToSave.exists()) {
                 int confirm = JOptionPane.showConfirmDialog(this,
@@ -1567,12 +1824,12 @@ private void setupTable() {
                         "Confirm Overwrite",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
-                
+
                 if (confirm != JOptionPane.YES_OPTION) {
                     return; // User chose not to overwrite
                 }
             }
-            
+
             try {
                 exportToFile(fileToSave);
                 JOptionPane.showMessageDialog(this,
@@ -1591,48 +1848,47 @@ private void setupTable() {
 
     /**
      * Exports habit data to the specified file.
-     * 
+     *
      * @param file The file to export to
      * @throws IOException If export fails
      */
     private void exportToFile(File file) throws IOException {
-        try (Workbook workbook = new XSSFWorkbook(); 
-             FileOutputStream fileOut = new FileOutputStream(file)) {
-            
+        try (Workbook workbook = new XSSFWorkbook(); FileOutputStream fileOut = new FileOutputStream(file)) {
+
             // Export all three sheets
             saveHabitMetadata(workbook);
             saveReminderMetadata(workbook);
             saveHabitData(workbook);
-            
+
             workbook.write(fileOut);
             logger.info("Habits exported to: " + file.getAbsolutePath());
         }
     }
 
     /**
-     * Imports habits from a user-selected Excel file.
-     * Allows users to choose whether to replace or merge with existing habits.
+     * Imports habits from a user-selected Excel file. Allows users to choose
+     * whether to replace or merge with existing habits.
      */
     private void importHabits() {
         // Warn if there are existing habits
         if (model.getRowCount() > 0) {
             String[] options = {"Replace All", "Merge (Skip Duplicates)", "Cancel"};
             int choice = JOptionPane.showOptionDialog(this,
-                    "You have " + model.getRowCount() + " existing habit(s).\n" +
-                    "How would you like to import?\n\n" +
-                    "• Replace All: Delete existing habits and import new ones\n" +
-                    "• Merge: Keep existing habits, add new ones (skip duplicates)",
+                    "You have " + model.getRowCount() + " existing habit(s).\n"
+                    + "How would you like to import?\n\n"
+                    + "• Replace All: Delete existing habits and import new ones\n"
+                    + "• Merge: Keep existing habits, add new ones (skip duplicates)",
                     "Import Options",
                     JOptionPane.YES_NO_CANCEL_OPTION,
                     JOptionPane.QUESTION_MESSAGE,
                     null,
                     options,
                     options[1]);
-            
+
             if (choice == 2 || choice == JOptionPane.CLOSED_OPTION) {
                 return; // User cancelled
             }
-            
+
             boolean replaceAll = (choice == 0);
             performImport(replaceAll);
         } else {
@@ -1643,23 +1899,23 @@ private void setupTable() {
 
     /**
      * Performs the actual import operation.
-     * 
+     *
      * @param replaceAll If true, clears existing habits before importing
      */
     private void performImport(boolean replaceAll) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Import Habits");
-        
+
         // Only allow .xlsx files
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "Excel Files (*.xlsx)", "xlsx");
         fileChooser.setFileFilter(filter);
-        
+
         int userSelection = fileChooser.showOpenDialog(this);
-        
+
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToImport = fileChooser.getSelectedFile();
-            
+
             try {
                 importFromFile(fileToImport, replaceAll);
                 JOptionPane.showMessageDialog(this,
@@ -1678,7 +1934,7 @@ private void setupTable() {
 
     /**
      * Imports habit data from the specified file.
-     * 
+     *
      * @param file The file to import from
      * @param replaceAll If true, clears existing data before importing
      * @throws IOException If import fails
@@ -1687,7 +1943,7 @@ private void setupTable() {
         if (!file.exists()) {
             throw new IOException("File not found: " + file.getAbsolutePath());
         }
-        
+
         // Store existing habit names to check for duplicates
         Set<String> existingHabits = new HashSet<>();
         if (!replaceAll) {
@@ -1696,45 +1952,44 @@ private void setupTable() {
                 existingHabits.add((String) model.getValueAt(i, habitColIdx));
             }
         }
-        
-        try (FileInputStream fileIn = new FileInputStream(file); 
-             Workbook workbook = new XSSFWorkbook(fileIn)) {
-            
+
+        try (FileInputStream fileIn = new FileInputStream(file); Workbook workbook = new XSSFWorkbook(fileIn)) {
+
             // Validate file structure
-            if (workbook.getSheet(SHEET_METADATA) == null || 
-                workbook.getSheet(SHEET_DATA) == null) {
+            if (workbook.getSheet(SHEET_METADATA) == null
+                    || workbook.getSheet(SHEET_DATA) == null) {
                 throw new IOException("Invalid habit tracker file. Missing required sheets.");
             }
-            
+
             // If replacing all, clear everything first
             if (replaceAll) {
                 clearAllHabits();
             }
-            
+
             // Load metadata
             Sheet metadataSheet = workbook.getSheet(SHEET_METADATA);
             if (metadataSheet != null) {
                 loadImportedMetadata(metadataSheet, existingHabits);
             }
-            
+
             // Load reminders
             Sheet reminderSheet = workbook.getSheet(SHEET_REMINDERS);
             if (reminderSheet != null) {
                 loadImportedReminders(reminderSheet, existingHabits);
             }
-            
+
             // Load table data
             Sheet dataSheet = workbook.getSheet(SHEET_DATA);
             if (dataSheet != null) {
                 loadImportedData(dataSheet, existingHabits);
             }
-            
+
             // Save the imported data immediately
             if (saveTimer != null && saveTimer.isRunning()) {
                 saveTimer.stop();
             }
             saveHabitsToExcel();
-            
+
             logger.info("Habits imported from: " + file.getAbsolutePath());
         }
     }
@@ -1750,7 +2005,7 @@ private void setupTable() {
         habitThresholds.clear();
         habitNotes.clear();
         habitReminders.clear();
-        
+
         // Clear from ReminderManager
         for (Reminder rem : ReminderManager.getInstance().getReminders()) {
             ReminderManager.getInstance().removeReminder(rem.getName());
@@ -1763,22 +2018,24 @@ private void setupTable() {
     private void loadImportedMetadata(Sheet metadataSheet, Set<String> existingHabits) {
         for (int i = 1; i <= metadataSheet.getLastRowNum(); i++) {
             Row row = metadataSheet.getRow(i);
-            if (row == null) continue;
-            
+            if (row == null) {
+                continue;
+            }
+
             String habitName = getCellValueAsString(row.getCell(0));
             if (habitName.isEmpty() || existingHabits.contains(habitName)) {
                 continue; // Skip empty or duplicate habits
             }
-            
+
             if ("Measurable".equals(getCellValueAsString(row.getCell(1)))) {
                 measurableHabits.add(habitName);
                 habitUnits.put(habitName, getCellValueAsString(row.getCell(2)));
-                
+
                 String targetStr = getCellValueAsString(row.getCell(3));
                 if (!targetStr.isEmpty()) {
                     habitTargets.put(habitName, Double.valueOf(targetStr));
                 }
-                
+
                 habitThresholds.put(habitName, getCellValueAsString(row.getCell(4)));
             }
             habitNotes.put(habitName, getCellValueAsString(row.getCell(5)));
@@ -1791,22 +2048,24 @@ private void setupTable() {
     private void loadImportedReminders(Sheet reminderSheet, Set<String> existingHabits) {
         for (int i = 1; i <= reminderSheet.getLastRowNum(); i++) {
             Row row = reminderSheet.getRow(i);
-            if (row == null) continue;
-            
+            if (row == null) {
+                continue;
+            }
+
             String habitName = getCellValueAsString(row.getCell(0));
             if (habitName.isEmpty() || existingHabits.contains(habitName)) {
                 continue; // Skip empty or duplicate habits
             }
-            
+
             Reminder rem = new Reminder();
             rem.setName(habitName);
             rem.setText(getCellValueAsString(row.getCell(1)));
-            
+
             String frequencyStr = getCellValueAsString(row.getCell(2));
             if (!frequencyStr.isEmpty()) {
                 rem.setFrequency(Reminder.Frequency.valueOf(frequencyStr));
             }
-            
+
             String daysStr = getCellValueAsString(row.getCell(3));
             if (!daysStr.isEmpty()) {
                 Set<DayOfWeek> days = new HashSet<>();
@@ -1815,12 +2074,12 @@ private void setupTable() {
                 }
                 rem.setDaysOfWeek(days);
             }
-            
+
             String timeStr = getCellValueAsString(row.getCell(4));
             if (!timeStr.isEmpty()) {
                 rem.setTime(LocalTime.parse(timeStr));
             }
-            
+
             // Set type based on whether it's measurable
             if (isMeasurableHabit(habitName)) {
                 rem.setType(Reminder.HabitType.MEASURABLE);
@@ -1830,7 +2089,7 @@ private void setupTable() {
             } else {
                 rem.setType(Reminder.HabitType.YES_NO);
             }
-            
+
             habitReminders.put(habitName, rem);
             ReminderManager.getInstance().addReminder(rem);
         }
@@ -1842,24 +2101,26 @@ private void setupTable() {
     private void loadImportedData(Sheet dataSheet, Set<String> existingHabits) {
         for (int rowIdx = 1; rowIdx <= dataSheet.getLastRowNum(); rowIdx++) {
             Row excelRow = dataSheet.getRow(rowIdx);
-            if (excelRow == null) continue;
-            
+            if (excelRow == null) {
+                continue;
+            }
+
             String habitName = getCellValueAsString(excelRow.getCell(getHabitNameColumnIndex()));
             if (habitName.isEmpty() || existingHabits.contains(habitName)) {
                 continue; // Skip empty or duplicate habits
             }
-            
+
             Object[] tableRow = new Object[model.getColumnCount()];
-            
+
             for (int colIdx = 0; colIdx < model.getColumnCount(); colIdx++) {
                 Cell cell = excelRow.getCell(colIdx);
-                
+
                 if (colIdx == getHabitNameColumnIndex()) {
                     tableRow[colIdx] = habitName;
                 } else if (isSelectColumnVisible && colIdx == 0) {
-                    tableRow[colIdx] = cell != null && 
-                                       cell.getCellType() == CellType.BOOLEAN && 
-                                       cell.getBooleanCellValue();
+                    tableRow[colIdx] = cell != null
+                            && cell.getCellType() == CellType.BOOLEAN
+                            && cell.getBooleanCellValue();
                 } else {
                     if (isMeasurableHabit(habitName)) {
                         tableRow[colIdx] = getCellValueAsString(cell);
@@ -1872,7 +2133,7 @@ private void setupTable() {
             model.addRow(tableRow);
         }
     }
-    
+
     private void DeleteButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteButtonActionPerformed
         // TODO add your handling code here:
         deleteSelectedRows();
@@ -1953,7 +2214,6 @@ private void setupTable() {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton DeleteButton;
     private javax.swing.JButton EditButton;
-    private javax.swing.JButton LockButton;
     private javax.swing.JButton addHabit;
     private javax.swing.JComboBox<String> fileMenu;
     private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
